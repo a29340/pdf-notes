@@ -1,55 +1,75 @@
 import SwiftUI
 import PDFKit
+#if os(iOS)
+import PencilKit
+#endif
 
 #if os(iOS)
 struct PDFViewRepresentable: UIViewRepresentable {
     @Binding var scale: CGFloat
+    @Binding var annotationsEnabled: Bool
+    @Binding var currentTool: AnnotationTool
+    @Binding var currentColor: AnnotationColor
+    @Binding var currentPageIndex: Int
     var pdfDocument: PDFDocument?
+    var annotationStore: AnnotationStore
 
     func makeUIView(context: Context) -> UIView {
         let container = UIView()
 
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.showsHorizontalScrollIndicator = true
-        scrollView.showsVerticalScrollIndicator = true
-        container.addSubview(scrollView)
-
         let pdfView = PDFView()
         pdfView.autoScales = false
         pdfView.displayMode = .singlePage
+        pdfView.displaysToolbar = false
         pdfView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.addSubview(pdfView)
+        container.addSubview(pdfView)
 
         if let document = pdfDocument {
             pdfView.document = document
         }
 
-        NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: container.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        let canvas = PKCanvasView()
+        canvas.translatesAutoresizingMaskIntoConstraints = false
+        canvas.isOpaque = false
+        canvas.backgroundColor = .clear
+        container.addSubview(canvas)
 
-            pdfView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            pdfView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            pdfView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            pdfView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            pdfView.widthAnchor.constraint(greaterThanOrEqualTo: scrollView.widthAnchor),
+        NSLayoutConstraint.activate([
+            pdfView.topAnchor.constraint(equalTo: container.topAnchor),
+            pdfView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            pdfView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            pdfView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+            canvas.topAnchor.constraint(equalTo: container.topAnchor),
+            canvas.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            canvas.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            canvas.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
-        let gesture = UIPinchGestureRecognizer(
-            target: context.coordinator,
-            action: #selector(Coordinator.handlePinch(_:))
-        )
-        pdfView.addGestureRecognizer(gesture)
+        let coordinator = context.coordinator
+        coordinator.pdfView = pdfView
+        coordinator.canvas = canvas
+        coordinator.currentPageIndex = 1
+
+        canvas.isHidden = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            guard let page = pdfView.document?.page(at: 1) else { return }
+            let targetFrame = pdfView.convert(
+                pdfView.pdfViewVisibleRect(from: page),
+                to: canvas.superview
+            )
+            canvas.frame = targetFrame
+            canvas.drawing = coordinator.store.drawing(for: 1)
+        }
 
         return container
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
-        guard let scrollView = uiView.subviews.first as? UIScrollView,
-              let pdfView = scrollView.subviews.first as? PDFView else { return }
+        let coordinator = context.coordinator
+        guard let pdfView = coordinator.pdfView,
+              let canvas = coordinator.canvas else { return }
 
         if let document = pdfDocument, pdfView.document == nil {
             pdfView.document = document
@@ -57,28 +77,89 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
         let clampedScale = max(0.5, min(scale, 5.0))
         pdfView.magnification = clampedScale
-        scrollView.contentSize = CGSize(
-            width: pdfView.bounds.width * clampedScale,
-            height: pdfView.bounds.height * clampedScale
+
+        synchronizeCanvas(
+            canvas: canvas,
+            pdfView: pdfView,
+            targetPage: currentPageIndex,
+            context: context
         )
+
+        canvas.isHidden = !annotationsEnabled
+
+        for gr in pdfView.gestureRecognizers ?? [] {
+            gr.isEnabled = !annotationsEnabled
+        }
+
+        if annotationsEnabled {
+            updateTool(canvas: canvas)
+        }
+    }
+
+    private func synchronizeCanvas(
+        canvas: PKCanvasView,
+        pdfView: PDFView,
+        targetPage: Int,
+        context: Context
+    ) {
+        let coordinator = context.coordinator
+        let store = annotationStore
+
+        guard coordinator.currentPageIndex != targetPage else { return }
+
+        if let drawing = canvas.drawing {
+            store.setDrawing(drawing, for: coordinator.currentPageIndex)
+        }
+
+        if let page = pdfView.document?.page(at: targetPage) {
+            pdfView.go(to: page)
+        }
+
+        coordinator.currentPageIndex = targetPage
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak canvas, weak pdfView] in
+            guard let canvas = canvas,
+                  let pdfView = pdfView,
+                  let page = pdfView.document?.page(at: targetPage) else { return }
+
+            let targetFrame = pdfView.convert(
+                pdfView.pdfViewVisibleRect(from: page),
+                to: canvas.superview
+            )
+            canvas.frame = targetFrame
+            canvas.drawing = store.drawing(for: targetPage)
+        }
+    }
+
+    private func updateTool(canvas: PKCanvasView) {
+        switch currentTool {
+        case .pen:
+            canvas.tool = PencilTool(
+                inkColor: currentColor.pkColor,
+                size: .medium
+            )
+        case .highlighter:
+            canvas.tool = HighlighterTool(
+                inkColor: currentColor.pkColor,
+                width: .medium
+            )
+        case .eraser:
+            canvas.tool = EraserTool(size: .large)
+        }
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(scaleBinding: $scale)
+        Coordinator(store: annotationStore)
     }
 
-    final class Coordinator {
-        private var scaleBinding: Binding<CGFloat>
+    final class Coordinator: NSObject {
+        var pdfView: PDFView?
+        var canvas: PKCanvasView?
+        var currentPageIndex: Int = 1
+        private let store: AnnotationStore
 
-        init(scaleBinding: Binding<CGFloat>) {
-            self.scaleBinding = scaleBinding
-        }
-
-        @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-            if gesture.state == .changed || gesture.state == .ended {
-                scaleBinding.wrappedValue *= gesture.scale
-                gesture.scale = 1.0
-            }
+        init(store: AnnotationStore) {
+            self.store = store
         }
     }
 }
