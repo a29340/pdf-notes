@@ -32,6 +32,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
         canvas.translatesAutoresizingMaskIntoConstraints = false
         canvas.isOpaque = false
         canvas.backgroundColor = .clear
+        canvas.delegate = context.coordinator
         container.addSubview(canvas)
 
         NSLayoutConstraint.activate([
@@ -53,10 +54,11 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
         canvas.isHidden = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            guard let page = pdfView.document?.page(at: 1) else { return }
-            let targetFrame = pdfView.convert(
-                pdfView.pdfViewVisibleRect(from: page),
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak canvas, weak pdfView] in
+            guard let page = pdfView?.document?.page(at: 1),
+                  let canvas = canvas else { return }
+            let targetFrame = pdfView!.convert(
+                pdfView!.pdfViewVisibleRect(from: page),
                 to: canvas.superview
             )
             canvas.frame = targetFrame
@@ -79,10 +81,10 @@ struct PDFViewRepresentable: UIViewRepresentable {
         pdfView.magnification = clampedScale
 
         synchronizeCanvas(
+            coordinator: coordinator,
             canvas: canvas,
             pdfView: pdfView,
-            targetPage: currentPageIndex,
-            context: context
+            targetPage: currentPageIndex
         )
 
         canvas.isHidden = !annotationsEnabled
@@ -97,18 +99,15 @@ struct PDFViewRepresentable: UIViewRepresentable {
     }
 
     private func synchronizeCanvas(
+        coordinator: Coordinator,
         canvas: PKCanvasView,
         pdfView: PDFView,
-        targetPage: Int,
-        context: Context
+        targetPage: Int
     ) {
-        let coordinator = context.coordinator
-        let store = annotationStore
-
         guard coordinator.currentPageIndex != targetPage else { return }
 
         if let drawing = canvas.drawing {
-            store.setDrawing(drawing, for: coordinator.currentPageIndex)
+            annotationStore.setDrawing(drawing, for: coordinator.currentPageIndex)
         }
 
         if let page = pdfView.document?.page(at: targetPage) {
@@ -127,7 +126,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
                 to: canvas.superview
             )
             canvas.frame = targetFrame
-            canvas.drawing = store.drawing(for: targetPage)
+            canvas.drawing = self.annotationStore.drawing(for: targetPage)
         }
     }
 
@@ -152,7 +151,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
         Coordinator(store: annotationStore)
     }
 
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, PKCanvasViewDelegate {
         var pdfView: PDFView?
         var canvas: PKCanvasView?
         var currentPageIndex: Int = 1
@@ -160,6 +159,29 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
         init(store: AnnotationStore) {
             self.store = store
+        }
+
+        func canvasView(
+            _ canvasView: PKCanvasView,
+            didFinishStrokeWith style: PKInkStrokeStyle
+        ) {
+            if let drawing = canvasView.drawing {
+                store.setDrawing(drawing, for: currentPageIndex)
+            }
+            Task { @MainActor in
+                await store.saveDirtyDrawings()
+            }
+        }
+
+        func canvasViewDidChangeEditing(_ canvasView: PKCanvasView) {
+            if !canvasView.isEditing {
+                if let drawing = canvasView.drawing {
+                    store.setDrawing(drawing, for: currentPageIndex)
+                }
+                Task { @MainActor in
+                    await store.saveDirtyDrawings()
+                }
+            }
         }
     }
 }

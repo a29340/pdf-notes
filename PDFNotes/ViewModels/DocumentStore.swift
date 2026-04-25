@@ -34,11 +34,26 @@ final class DocumentStore: ObservableObject {
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
+
+        let sanitizedName = sanitizeFileName(from: url)
+        let annotationsDir = documentsDirectory()
+            .appendingPathComponent(sanitizedName, isDirectory: true)
+            .appendingPathComponent("annotations", isDirectory: true)
+        createDirectoryIfNeeded(annotationsDir)
+        annotationStore.baseURL = annotationsDir
+
+        Task {
+            await annotationStore.loadDrawings(pageCount: document.pageCount)
+        }
         #endif
         isLoading = false
     }
 
     func reset() {
+        #if os(iOS)
+        flushAnnotations()
+        #endif
+
         pdfDocument = nil
         selectedDocument = nil
         errorMessage = nil
@@ -55,9 +70,7 @@ final class DocumentStore: ObservableObject {
     func toggleAnnotations() {
         annotationsEnabled.toggle()
         if !annotationsEnabled {
-            for (page, drawing) in annotationStore.drawings {
-                // persist in memory already via annotationStore
-            }
+            flushAnnotations()
         }
     }
 
@@ -73,6 +86,8 @@ final class DocumentStore: ObservableObject {
     func goToPage(_ index: Int) {
         guard let doc = pdfDocument,
               index >= 1, index <= doc.pageCount else { return }
+
+        flushAnnotations()
         currentPageIndex = index
     }
 
@@ -82,6 +97,44 @@ final class DocumentStore: ObservableObject {
         } else {
             annotationStore.clearAll()
         }
+        Task { await annotationStore.saveDirtyDrawings() }
+    }
+
+    func markCurrentPageDirty() {
+        annotationStore.markDirty(currentPageIndex)
+    }
+
+    private func flushAnnotations() {
+        if let drawing = annotationStore.drawings[currentPageIndex] {
+            annotationStore.setDrawing(drawing, for: currentPageIndex)
+        }
+        Task { await annotationStore.saveDirtyDrawings() }
+    }
+
+    private func documentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+
+    private func sanitizeFileName(from url: URL) -> String {
+        var name = url.deletingPathExtension().lastPathComponent
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "\\", with: "_")
+
+        if name.isEmpty {
+            name = "untitled"
+        }
+
+        return name
+    }
+
+    private func createDirectoryIfNeeded(_ url: URL) {
+        let fm = FileManager.default
+        guard !fm.fileExists(atPath: url.path) else { return }
+        try? fm.createDirectory(
+            at: url,
+            withIntermediateDirectories: true,
+            attributes: nil
+        )
     }
     #endif
 }
