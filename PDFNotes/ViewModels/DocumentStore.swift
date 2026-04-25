@@ -9,6 +9,8 @@ final class DocumentStore: ObservableObject {
     @Published var selectedDocument: Document?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var outlineItems: [OutlineItem] = []
+    
     #if os(iOS)
     @Published var annotationsEnabled = false
     @Published var currentTool: AnnotationTool = .pen
@@ -22,6 +24,8 @@ final class DocumentStore: ObservableObject {
     func loadDocument(at url: URL) {
         isLoading = true
         errorMessage = nil
+        
+        outlineItems.removeAll()
 
         guard let document = PDFDocument(url: url) else {
             errorMessage = "Unable to open this PDF file."
@@ -31,6 +35,7 @@ final class DocumentStore: ObservableObject {
 
         self.pdfDocument = document
         selectedDocument = Document(url: url)
+        
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
@@ -46,6 +51,9 @@ final class DocumentStore: ObservableObject {
             await annotationStore.loadDrawings(pageCount: document.pageCount)
         }
         #endif
+        
+        outlineItems = OutlineItem.extractAll(from: document)
+        
         isLoading = false
     }
 
@@ -57,12 +65,26 @@ final class DocumentStore: ObservableObject {
         pdfDocument = nil
         selectedDocument = nil
         errorMessage = nil
+        outlineItems.removeAll()
+        
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
         annotationsEnabled = false
         currentTool = .pen
         currentColor = .blue
+        #endif
+    }
+
+    func navigateToPage(_ index: Int) {
+        guard let doc = pdfDocument,
+              index >= 1, index <= doc.pageCount else { return }
+        
+        #if os(iOS)
+        flushAnnotations()
+        currentPageIndex = index
+        #else
+        _ = index
         #endif
     }
 

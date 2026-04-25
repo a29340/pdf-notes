@@ -6,6 +6,10 @@ import PDFKit
 struct ContentView: View {
     @EnvironmentObject var store: DocumentStore
     @State private var scale: CGFloat = 1.0
+    
+    #if os(iOS)
+    @State private var showOutlineSheet = false
+    #endif
 
     var body: some View {
         Group {
@@ -13,9 +17,7 @@ struct ContentView: View {
                 #if os(iOS)
                 pdfVieweriOS(document: document)
                 #else
-                if let pdfDoc = PDFDocument(url: document.url) {
-                    pdfViewermacOS(pdfDoc: pdfDoc)
-                }
+                pdfViewermacOS(document: document)
                 #endif
             } else {
                 FileBrowserView()
@@ -30,22 +32,31 @@ struct ContentView: View {
             return FileBrowserView()
         }
 
-        ZStack(alignment: .topTrailing) {
-            PDFViewRepresentable(
-                scale: $scale,
-                annotationsEnabled: $store.annotationsEnabled,
-                currentTool: $store.currentTool,
-                currentColor: $store.currentColor,
-                currentPageIndex: $store.currentPageIndex,
-                pdfDocument: pdfDoc,
-                annotationStore: store.annotationStore
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        NavigationSplitView {
+            if !store.outlineItems.isEmpty {
+                OutlineSidebarView()
+                    .navigationSplitViewColumnWidth(min: 200, ideal: 260)
+            }
+        } detail: {
+            ZStack(alignment: .topTrailing) {
+                PDFViewRepresentable(
+                    scale: $scale,
+                    annotationsEnabled: $store.annotationsEnabled,
+                    currentTool: $store.currentTool,
+                    currentColor: $store.currentColor,
+                    currentPageIndex: $store.currentPageIndex,
+                    pdfDocument: pdfDoc,
+                    annotationStore: store.annotationStore
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if !store.annotationsEnabled {
-                zoomControls
+                if !store.annotationsEnabled {
+                    zoomControls
+                }
             }
         }
+        
+        #if os(iOS)
         .safeAreaInset(edge: .bottom) {
             if store.annotationsEnabled {
                 AnnotationToolbar(
@@ -66,6 +77,31 @@ struct ContentView: View {
                 Color.clear.frame(height: 0)
             }
         }
+        
+        .overlay(alignment: .topLeading) {
+            if !store.outlineItems.isEmpty && UIDevice.current.userInterfaceIdiom != .pad {
+                outlineButton
+            }
+        }
+        .sheet(isPresented: $showOutlineSheet) {
+            NavigationView {
+                OutlineSidebarView()
+                    .navigationTitle("Contents")
+            }
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private var outlineButton: some View {
+        Button(action: {}) label: {
+            Image(systemName: "list.bullet")
+                .font(.title3)
+                .padding(8)
+                .background(Color.primary.opacity(0.15))
+                .clipShape(Circle())
+        }
+        .onTapGesture { showOutlineSheet = true }
     }
 
     @ViewBuilder
@@ -79,9 +115,7 @@ struct ContentView: View {
                     .clipShape(Circle())
             }
             .symbolRenderingMode(.palette)
-            .onTapGesture {
-                scale = max(0.5, scale * 0.8)
-            }
+            .onTapGesture { scale = max(0.5, scale * 0.8) }
 
             Text(String(format: "%.0f%%", scale * 100))
                 .font(.caption.monospaced())
@@ -98,9 +132,7 @@ struct ContentView: View {
                     .clipShape(Circle())
             }
             .symbolRenderingMode(.palette)
-            .onTapGesture {
-                scale = min(5.0, scale * 1.25)
-            }
+            .onTapGesture { scale = min(5.0, scale * 1.25) }
 
             Button {} label: {
                 Image(systemName: "arrow.counterclockwise")
@@ -109,9 +141,7 @@ struct ContentView: View {
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
             }
-            .onTapGesture {
-                scale = 1.0
-            }
+            .onTapGesture { scale = 1.0 }
 
             Button {} label: {
                 Image(systemName: "pencil")
@@ -133,9 +163,7 @@ struct ContentView: View {
                     .background(Color.red.opacity(0.15))
                     .clipShape(Circle())
             }
-            .onTapGesture {
-                store.reset()
-            }
+            .onTapGesture { store.reset() }
         }
         .padding(12)
     }
@@ -143,15 +171,26 @@ struct ContentView: View {
 
     #if os(macOS)
     @ViewBuilder
-    private func pdfViewermacOS(pdfDoc: PDFDocument) -> some View {
-        ZStack(alignment: .topTrailing) {
-            PDFViewRepresentable(
-                scale: $scale,
-                pdfDocument: pdfDoc
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private func pdfViewermacOS(document: Document) -> some View {
+        guard let pdfDoc = PDFDocument(url: document.url) else {
+            return FileBrowserView()
+        }
 
-            zoomControlsMac
+        NavigationSplitView {
+            if !store.outlineItems.isEmpty {
+                OutlineSidebarView()
+                    .navigationSplitViewColumnWidth(min: 200, ideal: 260)
+            }
+        } detail: {
+            ZStack(alignment: .topTrailing) {
+                PDFViewRepresentable(
+                    scale: $scale,
+                    pdfDocument: pdfDoc
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                zoomControlsMac
+            }
         }
     }
 
@@ -165,9 +204,7 @@ struct ContentView: View {
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
             }
-            .onTapGesture {
-                scale = max(0.5, scale * 0.8)
-            }
+            .onTapGesture { scale = max(0.5, scale * 0.8) }
 
             Text(String(format: "%.0f%%", scale * 100))
                 .font(.caption.monospaced())
@@ -183,9 +220,7 @@ struct ContentView: View {
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
             }
-            .onTapGesture {
-                scale = min(5.0, scale * 1.25)
-            }
+            .onTapGesture { scale = min(5.0, scale * 1.25) }
 
             Button {} label: {
                 Image(systemName: "arrow.counterclockwise")
@@ -194,9 +229,7 @@ struct ContentView: View {
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
             }
-            .onTapGesture {
-                scale = 1.0
-            }
+            .onTapGesture { scale = 1.0 }
 
             Button {} label: {
                 Image(systemName: "xmark.circle.fill")
@@ -205,9 +238,7 @@ struct ContentView: View {
                     .background(Color.red.opacity(0.15))
                     .clipShape(Circle())
             }
-            .onTapGesture {
-                store.reset()
-            }
+            .onTapGesture { store.reset() }
         }
         .padding(12)
     }
