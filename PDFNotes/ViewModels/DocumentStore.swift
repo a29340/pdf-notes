@@ -10,7 +10,8 @@ final class DocumentStore: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var outlineItems: [OutlineItem] = []
-    
+    @Published var cloudDocuments: [Document] = []
+
     #if os(iOS)
     @Published var annotationsEnabled = false
     @Published var currentTool: AnnotationTool = .pen
@@ -20,11 +21,19 @@ final class DocumentStore: ObservableObject {
     #endif
 
     private var pdfDocument: PDFDocument?
+    private let cloudManager = CloudDocumentManager.shared
+
+    init() {
+        _ = cloudManager.initialize(bundleID: Bundle.main.bundleIdentifier ?? "com.pdfnotes.app")
+    }
+
+    func refreshCloudDocuments() {
+        cloudDocuments = cloudManager.listDocuments()
+    }
 
     func loadDocument(at url: URL) {
         isLoading = true
         errorMessage = nil
-        
         outlineItems.removeAll()
 
         guard let document = PDFDocument(url: url) else {
@@ -35,26 +44,80 @@ final class DocumentStore: ObservableObject {
 
         self.pdfDocument = document
         selectedDocument = Document(url: url)
-        
+
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
 
-        let sanitizedName = sanitizeFileName(from: url)
-        let annotationsDir = documentsDirectory()
-            .appendingPathComponent(sanitizedName, isDirectory: true)
-            .appendingPathComponent("annotations", isDirectory: true)
-        createDirectoryIfNeeded(annotationsDir)
+        guard let annotationsDir = cloudManager.createAnnotationsDirectory(
+            for: selectedDocument!
+        ) else {
+            errorMessage = "Unable to create annotation storage."
+            isLoading = false
+            return
+        }
         annotationStore.baseURL = annotationsDir
 
         Task {
             await annotationStore.loadDrawings(pageCount: document.pageCount)
         }
         #endif
-        
+
         outlineItems = OutlineItem.extractAll(from: document)
-        
         isLoading = false
+    }
+
+    func loadFromCloud(_ doc: Document) {
+        guard let cloudURL = cloudManager.containerURL else { return }
+
+        if doc.url.absoluteString.contains(cloudURL.absoluteString) {
+            loadDocument(at: doc.url)
+        } else {
+            errorMessage = "Document is not in iCloud storage."
+        }
+    }
+
+    func importToCloud(from url: URL, overwrite: Bool = false) {
+        let accessGranted = url.startAccessingSecurityScopedResource()
+        var tempURL: URL?
+
+        if accessGranted {
+            let fm = FileManager.default
+            let cacheDir = fm.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            tempURL = cacheDir.appendingPathComponent(url.lastPathComponent)
+
+            do {
+                try fm.copyItem(at: url, to: tempURL!)
+            } catch {
+                accessGranted ? url.stopAccessingSecurityScopedResource() : ()
+                errorMessage = "Failed to copy document."
+                return
+            }
+
+            if let iCloudURL = cloudManager.copyDocument(from: tempURL!, overwrite: overwrite) {
+                try? fm.removeItem(at: tempURL!)
+                loadDocument(at: iCloudURL)
+                refreshCloudDocuments()
+            } else {
+                try? fm.removeItem(at: tempURL!)
+                errorMessage = "A document with this name already exists."
+            }
+
+            url.stopAccessingSecurityScopedResource()
+        } else {
+            if let iCloudURL = cloudManager.copyDocument(from: url, overwrite: overwrite) {
+                loadDocument(at: iCloudURL)
+                refreshCloudDocuments()
+            } else {
+                errorMessage = "A document with this name already exists."
+            }
+        }
+    }
+
+    func deleteFromCloud(_ doc: Document) {
+        if cloudManager.deleteDocument(doc) {
+            refreshCloudDocuments()
+        }
     }
 
     func reset() {
@@ -66,7 +129,7 @@ final class DocumentStore: ObservableObject {
         selectedDocument = nil
         errorMessage = nil
         outlineItems.removeAll()
-        
+
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
@@ -79,7 +142,7 @@ final class DocumentStore: ObservableObject {
     func navigateToPage(_ index: Int) {
         guard let doc = pdfDocument,
               index >= 1, index <= doc.pageCount else { return }
-        
+
         #if os(iOS)
         flushAnnotations()
         currentPageIndex = index
@@ -131,32 +194,6 @@ final class DocumentStore: ObservableObject {
             annotationStore.setDrawing(drawing, for: currentPageIndex)
         }
         Task { await annotationStore.saveDirtyDrawings() }
-    }
-
-    private func documentsDirectory() -> URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-    }
-
-    private func sanitizeFileName(from url: URL) -> String {
-        var name = url.deletingPathExtension().lastPathComponent
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "\\", with: "_")
-
-        if name.isEmpty {
-            name = "untitled"
-        }
-
-        return name
-    }
-
-    private func createDirectoryIfNeeded(_ url: URL) {
-        let fm = FileManager.default
-        guard !fm.fileExists(atPath: url.path) else { return }
-        try? fm.createDirectory(
-            at: url,
-            withIntermediateDirectories: true,
-            attributes: nil
-        )
     }
     #endif
 }

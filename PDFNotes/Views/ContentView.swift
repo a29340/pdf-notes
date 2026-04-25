@@ -21,6 +21,7 @@ struct ContentView: View {
                 #endif
             } else {
                 FileBrowserView()
+                    .onAppear { store.refreshCloudDocuments() }
             }
         }
     }

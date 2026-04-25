@@ -6,11 +6,95 @@ struct FileBrowserView: View {
     @EnvironmentObject var store: DocumentStore
 
     var body: some View {
-        DocumentPickerRepresentable()
-            .onChange(of: store.selectedDocument) { _ in
-                // Selection handled by representable coordinator
+        VStack(spacing: 0) {
+            if !store.cloudDocuments.isEmpty {
+                documentList
+            } else {
+                emptyState
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+
+            importButton
+                .padding(.bottom, 12)
+        }
     }
+
+    private var documentList: some View {
+        List(store.cloudDocuments) { doc in
+            Button(action: {}) label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "doc")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+                        .frame(width: 32)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(doc.name)
+                            .font(.body)
+                        if isCloudURL(doc.url) {
+                            Image(systemName: "icloud.fill")
+                                .font(.caption2)
+                                .foregroundColor(.blue)
+                        }
+                    }
+
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
+            .onTapGesture { store.loadFromCloud(doc) }
+        }
+        .listStyle(.plain)
+
+        #if os(iOS)
+        .onDelete(perform: deleteDocuments)
+        #endif
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 64))
+                .foregroundColor(.secondary)
+
+            Text("No PDFs in iCloud")
+                .font(.title2)
+                .foregroundColor(.secondary)
+
+            Text("Import a PDF to get started")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private var importButton: some View {
+        DocumentPickerRepresentable()
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.blue.opacity(0.12))
+            .clipShape(Capsule())
+            .overlay(
+                Capsule().stroke(Color.blue.opacity(0.3), lineWidth: 1)
+            )
+    }
+
+    private func isCloudURL(_ url: URL) -> Bool {
+        return url.absoluteString.contains("mobile~docs") ||
+               url.absoluteString.contains("ubiquity")
+    }
+
+    #if os(iOS)
+    private func deleteDocuments(at offsets: IndexSet) {
+        for index in offsets {
+            guard index < store.cloudDocuments.count else { continue }
+            let doc = store.cloudDocuments[index]
+            if !doc.name.lowercased().contains(store.selectedDocument?.name.lowercased() ?? "") ||
+               store.selectedDocument == nil {
+                store.deleteFromCloud(doc)
+            }
+        }
+    }
+    #endif
 }
 
 struct DocumentPickerRepresentable: UIViewRepresentable {
@@ -22,7 +106,7 @@ struct DocumentPickerRepresentable: UIViewRepresentable {
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .clear
         return view
     }
 
@@ -54,11 +138,7 @@ extension DocumentPickerRepresentable {
             didPickDocumentsAt urls: [URL]
         ) {
             guard let url = urls.first else { return }
-            let accessGranted = url.startAccessingSecurityScopedResource()
-            if accessGranted {
-                parent.store.loadDocument(at: url)
-                url.stopAccessingSecurityScopedResource()
-            }
+            parent.store.importToCloud(from: url, overwrite: true)
         }
 
         func documentPickerWasCancelled(
@@ -76,33 +156,78 @@ struct FileBrowserView: View {
     @State private var showOpenPanel = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "doc.text")
-                .font(.system(size: 64))
-                .foregroundColor(.secondary)
-
-            Text("Select a PDF to open")
-                .font(.title2)
-
-            Button("Browse Files") {
-                showOpenPanel = true
+        VStack(spacing: 0) {
+            if !store.cloudDocuments.isEmpty {
+                documentListMac
+            } else {
+                emptyStateMac
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
 
-            if let message = store.errorMessage {
-                Text(message)
-                    .foregroundColor(.red)
-                    .font(.caption)
+            Divider()
+
+            HStack {
+                Button("Import PDF") {
+                    showOpenPanel = true
+                }
+                .buttonStyle(.borderedProminent)
             }
+            .padding()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: showOpenPanel) { newValue in
             if newValue {
                 NSApp.activate(ignoringOtherApps: true)
                 presentOpenPanel()
             }
         }
+    }
+
+    private var documentListMac: some View {
+        List(store.cloudDocuments) { doc in
+            Button(action: {}) label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "doc")
+                        .font(.title3)
+                        .foregroundColor(.blue)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(doc.name)
+                            .font(.body)
+                        if isCloudURL(doc.url) {
+                            Label("iCloud", systemImage: "icloud.fill")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
+
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
+            .onTapGesture { store.loadFromCloud(doc) }
+        }
+        .listStyle(.sidebar)
+    }
+
+    private var emptyStateMac: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 64))
+                .foregroundColor(.secondary)
+
+            Text("No PDFs in iCloud")
+                .font(.title2)
+                .foregroundColor(.secondary)
+
+            Text("Import a PDF to get started")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func isCloudURL(_ url: URL) -> Bool {
+        return url.absoluteString.contains("mobile~docs") ||
+               url.absoluteString.contains("ubiquity")
     }
 
     private func presentOpenPanel() {
@@ -115,7 +240,7 @@ struct FileBrowserView: View {
             showOpenPanel = false
 
             if response == .OK, let url = panel.url {
-                store.loadDocument(at: url)
+                store.importToCloud(from: url, overwrite: true)
             }
         }
     }
