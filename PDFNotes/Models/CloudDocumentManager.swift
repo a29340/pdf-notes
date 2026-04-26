@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(UIKit)
+import UIKit
+#endif
 
 final class CloudDocumentManager {
     static let shared = CloudDocumentManager()
@@ -6,6 +9,7 @@ final class CloudDocumentManager {
     private(set) var containerURL: URL?
     private(set) var documentsURL: URL?
 
+    #if os(iOS)
     @MainActor
     func initialize(bundleID: String) -> Bool {
         guard let container = FileManager.default.url(
@@ -131,8 +135,6 @@ final class CloudDocumentManager {
         return annotationsDir
     }
 
-    // MARK: - Helpers
-
     private func downloadIfNeeded(_ url: URL) -> Bool {
         do {
             let resourceValues = try url.resourceValues(forKeys: [.ubiquitousItemIsDownloadedKey])
@@ -168,4 +170,29 @@ final class CloudDocumentManager {
         if name.isEmpty { name = "untitled" }
         return name
     }
+    #else
+    func initialize(bundleID: String) -> Bool {
+        return true
+    }
+
+    func listDocuments() -> [Document] {
+        return []
+    }
+
+    func copyDocument(from sourceURL: URL, overwrite: Bool = false) -> URL? {
+        return nil
+    }
+
+    func deleteDocument(_ doc: Document) -> Bool {
+        return false
+    }
+
+    func annotationsDirectory(for doc: Document) -> URL? {
+        return nil
+    }
+
+    func createAnnotationsDirectory(for doc: Document) -> URL? {
+        return nil
+    }
+    #endif
 }

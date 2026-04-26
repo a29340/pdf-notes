@@ -1,6 +1,7 @@
 import Foundation
 
-struct Document {
+struct Document: Identifiable {
+    let id = UUID()
     let url: URL
     let name: String
 

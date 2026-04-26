@@ -196,9 +196,6 @@ struct PDFViewRepresentable: NSViewRepresentable {
         let pdfView = PDFView()
         pdfView.autoScales = true
         pdfView.displayMode = .singlePage
-        pdfView.displaysToolbar = false
-        pdfView.displaysPageField = false
-        pdfView.displaysBookmarkBar = false
 
         if let document = pdfDocument {
             pdfView.document = document
@@ -211,7 +208,6 @@ struct PDFViewRepresentable: NSViewRepresentable {
         if let document = pdfDocument, nsView.document == nil {
             nsView.document = document
         }
-        nsView.magnification = scale
     }
 }
 #endif

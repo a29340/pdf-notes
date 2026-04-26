@@ -21,7 +21,7 @@ struct FileBrowserView: View {
 
     private var documentList: some View {
         List(store.cloudDocuments) { doc in
-            Button(action: {}) label: {
+            Button {
                 HStack(spacing: 12) {
                     Image(systemName: "doc")
                         .font(.title3)
@@ -40,7 +40,7 @@ struct FileBrowserView: View {
 
                     Spacer()
                 }
-            }
+            } label: { }
             .buttonStyle(.plain)
             .onTapGesture { store.loadFromCloud(doc) }
         }
@@ -184,7 +184,7 @@ struct FileBrowserView: View {
 
     private var documentListMac: some View {
         List(store.cloudDocuments) { doc in
-            Button(action: {}) label: {
+            Button {
                 HStack(spacing: 12) {
                     Image(systemName: "doc")
                         .font(.title3)
@@ -202,7 +202,7 @@ struct FileBrowserView: View {
 
                     Spacer()
                 }
-            }
+            } label: { }
             .buttonStyle(.plain)
             .onTapGesture { store.loadFromCloud(doc) }
         }

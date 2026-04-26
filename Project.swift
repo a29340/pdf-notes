@@ -21,49 +21,47 @@ let project = Project(
     targets: [
         // MARK: - iOS target
 
-        Target(
+        .target(
             name: "PDFNotes",
-            platform: .iOS,
+            destinations: .iOS,
             product: .app,
-            productName: nil,
-            bundleIdentifier: "com.pdfnotes.app",
+            productName: "PDFNotes",
+            bundleId: "com.pdfnotes.app",
             deploymentTargets: .iOS("16.0"),
+            infoPlist: .extendingDefault(with: [
+                "UIFileSharingEnabled": true,
+                "LSSupportsOpeningDocumentsInPlace": true,
+            ]),
             sources: ["PDFNotes/**/*.swift"],
             resources: [
                 "PDFNotes/Assets.xcassets",
                 "PDFNotes/Info.plist",
             ],
-            dependencies: [
-                .framework("PencilKit"),
-                .framework("PDFKit"),
-            ],
-            infoPlist: .extendingDefault(with: [
-                "UIFileSharingEnabled": true,
-                "LSSupportsOpeningDocumentsInPlace": true,
-            ]),
             entitlements: "PDFNotes/PDFNotes.entitlements",
-            preBuildScripts: []
+            dependencies: [
+                .sdk(name: "PencilKit", type: .framework),
+                .sdk(name: "PDFKit", type: .framework),
+            ],
         ),
 
         // MARK: - macOS target
 
-        Target(
+        .target(
             name: "PDFNotesMac",
-            platform: .macOS,
+            destinations: .macOS,
             product: .app,
-            productName: nil,
-            bundleIdentifier: "com.pdfnotes.app.mac",
+            productName: "PDFNotesMac",
+            bundleId: "com.pdfnotes.app.mac",
             deploymentTargets: .macOS("13.0"),
+            infoPlist: .default,
             sources: ["PDFNotes/**/*.swift"],
             resources: [
                 "PDFNotes/Assets.xcassets",
             ],
-            dependencies: [
-                .framework("PDFKit"),
-            ],
-            infoPlist: .default,
             entitlements: "PDFNotes/PDFNotesMac.entitlements",
-            preBuildScripts: []
+            dependencies: [
+                .sdk(name: "PDFKit", type: .framework),
+            ],
         ),
     ]
 )

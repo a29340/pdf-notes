@@ -1,5 +1,14 @@
 import Foundation
+import AppKit
 import PencilKit
+import SwiftUI
+
+#if canImport(UIKit)
+import UIKit
+typealias PlatformColor = UIColor
+#else
+typealias PlatformColor = NSColor
+#endif
 
 enum AnnotationTool {
     case pen
@@ -10,7 +19,7 @@ enum AnnotationTool {
 enum AnnotationColor: CaseIterable {
     case black, blue, red, green, yellow
 
-    var pkColor: UIColor {
+    var pkColor: PlatformColor {
         switch self {
         case .black:  return .black
         case .blue:   return .systemBlue
@@ -100,6 +109,7 @@ final class AnnotationStore {
 
     @MainActor
     func loadDrawings(pageCount: Int) async {
+        #if os(iOS)
         guard let baseURL = baseURL else { return }
 
         drawings.removeAll()
@@ -110,6 +120,7 @@ final class AnnotationStore {
                 drawings[index] = drawing
             }
         }
+        #endif
     }
 
     func nextColor() {
@@ -149,7 +160,7 @@ final class AnnotationStore {
             assertionFailure("Failed to save drawing for page \(page): \(error.localizedDescription)")
         }
     }
-
+    #if os(iOS)
     private func loadDrawing(from baseURL: URL, page: Int) -> PKDrawing? {
         let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
 
@@ -162,6 +173,7 @@ final class AnnotationStore {
 
         return drawing
     }
+    #endif
 
     private func removeFile(for baseURL: URL, page: Int) {
         let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")

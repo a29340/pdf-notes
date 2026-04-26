@@ -8,6 +8,7 @@ struct OutlineItem: Identifiable {
     let destinationPageIndex: Int?
 }
 
+#if os(iOS)
 extension OutlineItem {
     init(pdfOutline: PDFOutline) {
         self.title = pdfOutline.label ?? ""
@@ -42,3 +43,10 @@ extension OutlineItem {
         return items
     }
 }
+#else
+extension OutlineItem {
+    static func extractAll(from document: PDFDocument) -> [OutlineItem] {
+        return []
+    }
+}
+#endif

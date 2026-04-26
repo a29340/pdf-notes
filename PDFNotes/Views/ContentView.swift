@@ -1,5 +1,5 @@
 import SwiftUI
-#if os(iOS)
+#if canImport(PDFKit)
 import PDFKit
 #endif
 
@@ -95,26 +95,26 @@ struct ContentView: View {
 
     @ViewBuilder
     private var outlineButton: some View {
-        Button(action: {}) label: {
+        Button {
             Image(systemName: "list.bullet")
                 .font(.title3)
                 .padding(8)
                 .background(Color.primary.opacity(0.15))
                 .clipShape(Circle())
-        }
+        } label: { }
         .onTapGesture { showOutlineSheet = true }
     }
 
     @ViewBuilder
     private var zoomControls: some View {
         HStack(spacing: 8) {
-            Button {} label: {
+            Button {
                 Image(systemName: "minus.circle.fill")
                     .font(.title2)
                     .padding(8)
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
-            }
+            } label: { }
             .symbolRenderingMode(.palette)
             .onTapGesture { scale = max(0.5, scale * 0.8) }
 
@@ -125,32 +125,32 @@ struct ContentView: View {
                 .background(Color.primary.opacity(0.15))
                 .clipShape(Capsule())
 
-            Button {} label: {
+            Button {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
                     .padding(8)
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
-            }
+            } label: { }
             .symbolRenderingMode(.palette)
             .onTapGesture { scale = min(5.0, scale * 1.25) }
 
-            Button {} label: {
+            Button {
                 Image(systemName: "arrow.counterclockwise")
                     .font(.title3)
                     .padding(8)
                     .background(Color.primary.opacity(0.15))
                     .clipShape(Circle())
-            }
+            } label: { }
             .onTapGesture { scale = 1.0 }
 
-            Button {} label: {
+            Button {
                 Image(systemName: "pencil")
                     .font(.title2)
                     .padding(8)
                     .background(Color.orange.opacity(0.15))
                     .clipShape(Circle())
-            }
+            } label: { }
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     store.toggleAnnotations()
@@ -173,25 +173,25 @@ struct ContentView: View {
     #if os(macOS)
     @ViewBuilder
     private func pdfViewermacOS(document: Document) -> some View {
-        guard let pdfDoc = PDFDocument(url: document.url) else {
-            return FileBrowserView()
-        }
+        if let pdfDoc = PDFDocument(url: document.url) {
+            NavigationSplitView {
+                if !store.outlineItems.isEmpty {
+                    OutlineSidebarView()
+                        .navigationSplitViewColumnWidth(min: 200, ideal: 260)
+                }
+            } detail: {
+                ZStack(alignment: .topTrailing) {
+                    PDFViewRepresentable(
+                        scale: $scale,
+                        pdfDocument: pdfDoc
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        NavigationSplitView {
-            if !store.outlineItems.isEmpty {
-                OutlineSidebarView()
-                    .navigationSplitViewColumnWidth(min: 200, ideal: 260)
+                    zoomControlsMac
+                }
             }
-        } detail: {
-            ZStack(alignment: .topTrailing) {
-                PDFViewRepresentable(
-                    scale: $scale,
-                    pdfDocument: pdfDoc
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                zoomControlsMac
-            }
+        } else {
+            FileBrowserView()
         }
     }
 
