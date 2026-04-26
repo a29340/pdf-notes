@@ -1,0 +1,61 @@
+{
+  "" : {
+    "const-values" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary.swiftconstvalues",
+    "dependencies" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary.d",
+    "diagnostics" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary.dia",
+    "emit-module-dependencies" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary-emit-module.dia",
+    "pch" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotes-primary.swiftdeps"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Models/AnnotationStore.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/AnnotationStore.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/AnnotationStore.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/AnnotationStore.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Models/Document.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/Document.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/Document.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/Document.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Models/OutlineItem.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/OutlineItem.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/OutlineItem.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/OutlineItem.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/PDFNotesApp.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotesApp.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotesApp.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFNotesApp.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/ViewModels/DocumentStore.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/DocumentStore.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/DocumentStore.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/DocumentStore.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Views/AnnotationToolbar.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/AnnotationToolbar.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/AnnotationToolbar.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/AnnotationToolbar.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Views/ContentView.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/ContentView.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Views/FileBrowserView.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/FileBrowserView.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/FileBrowserView.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/FileBrowserView.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Views/OutlineSidebarView.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/OutlineSidebarView.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/OutlineSidebarView.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/OutlineSidebarView.o"
+  },
+  "/Users/m1/code/pdf-notes/PDFNotes/Views/PDFViewRepresentable.swift" : {
+    "index-unit-output-path" : "/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFViewRepresentable.o",
+    "llvm-bc" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFViewRepresentable.bc",
+    "object" : "/Users/m1/code/pdf-notes/build/PDFNotes.build/Release-iphoneos/PDFNotes.build/Objects-normal/arm64/PDFViewRepresentable.o"
+  }
+}

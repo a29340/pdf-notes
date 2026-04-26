@@ -1,6 +1,6 @@
 import Foundation
 
-struct Document {
+struct Document: Equatable {
     let url: URL
     let name: String
 

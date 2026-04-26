@@ -1,5 +1,6 @@
 import SwiftUI
 import PDFKit
+
 #if os(iOS)
 import PencilKit
 #endif
@@ -20,7 +21,6 @@ struct PDFViewRepresentable: UIViewRepresentable {
         let pdfView = PDFView()
         pdfView.autoScales = false
         pdfView.displayMode = .singlePage
-        pdfView.displaysToolbar = false
         pdfView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(pdfView)
 
@@ -54,17 +54,6 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
         canvas.isHidden = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak canvas, weak pdfView] in
-            guard let page = pdfView?.document?.page(at: 1),
-                  let canvas = canvas else { return }
-            let targetFrame = pdfView!.convert(
-                pdfView!.pdfViewVisibleRect(from: page),
-                to: canvas.superview
-            )
-            canvas.frame = targetFrame
-            canvas.drawing = coordinator.store.drawing(for: 1)
-        }
-
         return container
     }
 
@@ -78,7 +67,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
         }
 
         let clampedScale = max(0.5, min(scale, 5.0))
-        pdfView.magnification = clampedScale
+        pdfView.scaleFactor = clampedScale
 
         synchronizeCanvas(
             coordinator: coordinator,
@@ -106,11 +95,10 @@ struct PDFViewRepresentable: UIViewRepresentable {
     ) {
         guard coordinator.currentPageIndex != targetPage else { return }
 
-        if let drawing = canvas.drawing {
-            annotationStore.setDrawing(drawing, for: coordinator.currentPageIndex)
-        }
+        let drawing = canvas.drawing
+        annotationStore.setDrawing(drawing, for: coordinator.currentPageIndex)
 
-        if let page = pdfView.document?.page(at: targetPage) {
+        if let page = pdfView.document?.page(at: targetPage - 1) {
             pdfView.go(to: page)
         }
 
@@ -119,31 +107,30 @@ struct PDFViewRepresentable: UIViewRepresentable {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak canvas, weak pdfView] in
             guard let canvas = canvas,
                   let pdfView = pdfView,
-                  let page = pdfView.document?.page(at: targetPage) else { return }
+                  let _ = pdfView.document?.page(at: targetPage - 1) else { return }
 
-            let targetFrame = pdfView.convert(
-                pdfView.pdfViewVisibleRect(from: page),
-                to: canvas.superview
-            )
-            canvas.frame = targetFrame
-            canvas.drawing = self.annotationStore.drawing(for: targetPage)
+            if let pageBounds = pdfView.document?.page(at: targetPage - 1)?.bounds(for: .mediaBox) {
+                let scale = pdfView.scaleFactor
+                let targetFrame = CGRect(
+                    x: 0,
+                    y: 0,
+                    width: pageBounds.width * scale,
+                    height: pageBounds.height * scale
+                )
+                canvas.frame = targetFrame
+                canvas.drawing = self.annotationStore.drawing(for: targetPage)
+            }
         }
     }
 
     private func updateTool(canvas: PKCanvasView) {
         switch currentTool {
         case .pen:
-            canvas.tool = PencilTool(
-                inkColor: currentColor.pkColor,
-                size: .medium
-            )
+            canvas.tool = PKInkingTool(.pen, color: currentColor.pkInkColor, width: 5)
         case .highlighter:
-            canvas.tool = HighlighterTool(
-                inkColor: currentColor.pkColor,
-                width: .medium
-            )
+            canvas.tool = PKInkingTool(.marker, color: currentColor.pkInkColor, width: 30)
         case .eraser:
-            canvas.tool = EraserTool(size: .large)
+            canvas.tool = PKEraserTool(.vector)
         }
     }
 
@@ -161,26 +148,11 @@ struct PDFViewRepresentable: UIViewRepresentable {
             self.store = store
         }
 
-        func canvasView(
-            _ canvasView: PKCanvasView,
-            didFinishStrokeWith style: PKInkStrokeStyle
-        ) {
-            if let drawing = canvasView.drawing {
-                store.setDrawing(drawing, for: currentPageIndex)
-            }
+        func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+            let drawing = canvasView.drawing
+            store.setDrawing(drawing, for: currentPageIndex)
             Task { @MainActor in
                 await store.saveDirtyDrawings()
-            }
-        }
-
-        func canvasViewDidChangeEditing(_ canvasView: PKCanvasView) {
-            if !canvasView.isEditing {
-                if let drawing = canvasView.drawing {
-                    store.setDrawing(drawing, for: currentPageIndex)
-                }
-                Task { @MainActor in
-                    await store.saveDirtyDrawings()
-                }
             }
         }
     }
@@ -196,9 +168,6 @@ struct PDFViewRepresentable: NSViewRepresentable {
         let pdfView = PDFView()
         pdfView.autoScales = true
         pdfView.displayMode = .singlePage
-        pdfView.displaysToolbar = false
-        pdfView.displaysPageField = false
-        pdfView.displaysBookmarkBar = false
 
         if let document = pdfDocument {
             pdfView.document = document
@@ -211,7 +180,7 @@ struct PDFViewRepresentable: NSViewRepresentable {
         if let document = pdfDocument, nsView.document == nil {
             nsView.document = document
         }
-        nsView.magnification = scale
+        nsView.scaleFactor = scale
     }
 }
 #endif

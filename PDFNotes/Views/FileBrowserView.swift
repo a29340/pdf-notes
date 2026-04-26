@@ -7,8 +7,9 @@ struct FileBrowserView: View {
 
     var body: some View {
         DocumentPickerRepresentable()
-            .onChange(of: store.selectedDocument) { _ in
-                // Selection handled by representable coordinator
+            .onChange(of: store.selectedDocument) { oldValue, newValue in
+                _ = oldValue
+                _ = newValue
             }
     }
 }

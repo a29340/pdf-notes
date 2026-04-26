@@ -1,5 +1,9 @@
 import Foundation
+import SwiftUI
+
+#if os(iOS)
 import PencilKit
+#endif
 
 enum AnnotationTool {
     case pen
@@ -8,18 +12,12 @@ enum AnnotationTool {
 }
 
 enum AnnotationColor: CaseIterable {
-    case black, blue, red, green, yellow
-
-    var pkColor: UIColor {
-        switch self {
-        case .black:  return .black
-        case .blue:   return .systemBlue
-        case .red:    return .systemRed
-        case .green:  return .systemGreen
-        case .yellow: return .systemYellow
-        }
-    }
-
+    case black
+    case blue
+    case red
+    case green
+    case yellow
+    
     var swiftUIColor: Color {
         switch self {
         case .black:  return .black
@@ -29,7 +27,7 @@ enum AnnotationColor: CaseIterable {
         case .yellow: return .yellow
         }
     }
-
+    
     var symbolName: String {
         switch self {
         case .black:  return "circle.fill"
@@ -39,8 +37,21 @@ enum AnnotationColor: CaseIterable {
         case .yellow: return "circle.fill"
         }
     }
+    
+    #if os(iOS)
+    var pkInkColor: UIColor {
+        switch self {
+        case .black:  return .black
+        case .blue:   return .systemBlue
+        case .red:    return .systemRed
+        case .green:  return .systemGreen
+        case .yellow: return .systemYellow
+        }
+    }
+    #endif
 }
 
+#if os(iOS)
 final class AnnotationStore {
     var baseURL: URL?
     var drawings: [Int: PKDrawing] = [:]
@@ -128,8 +139,6 @@ final class AnnotationStore {
         baseURL = nil
     }
 
-    // MARK: - File I/O
-
     private static let fileExtension = "drawing"
 
     private func fileURL(for page: Int) -> URL {
@@ -137,13 +146,9 @@ final class AnnotationStore {
     }
 
     private func saveDrawing(_ drawing: PKDrawing, to baseURL: URL, page: Int) {
-        guard let data = try? NSKeyedArchiver.archivedData(
-            withRootObject: drawing,
-            requiringSecureCoding: true
-        ) else { return }
-
-        let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
         do {
+            let data = try drawing.dataRepresentation()
+            let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
             try data.write(to: fileURL)
         } catch {
             assertionFailure("Failed to save drawing for page \(page): \(error.localizedDescription)")
@@ -155,10 +160,7 @@ final class AnnotationStore {
 
         guard FileManager.default.fileExists(atPath: fileURL.path),
               let data = try? Data(contentsOf: fileURL),
-              let drawing = try? NSKeyedUnarchiver.unarchivedObject(
-                  ofClass: PKDrawing.self,
-                  from: data
-              ) else { return nil }
+              let drawing = try? PKDrawing(data: data) else { return nil }
 
         return drawing
     }
@@ -168,3 +170,18 @@ final class AnnotationStore {
         try? FileManager.default.removeItem(at: fileURL)
     }
 }
+#else
+final class AnnotationStore {
+    var baseURL: URL?
+    var tool: AnnotationTool = .pen
+    var color: AnnotationColor = .blue
+    var annotationsEnabled = false
+
+    func reset() {
+        tool = .pen
+        color = .blue
+        annotationsEnabled = false
+        baseURL = nil
+    }
+}
+#endif

@@ -1,0 +1,10 @@
+/Users/m1/code/pdf-notes/PDFNotes/Models/AnnotationStore.swift
+/Users/m1/code/pdf-notes/PDFNotes/Models/Document.swift
+/Users/m1/code/pdf-notes/PDFNotes/Models/OutlineItem.swift
+/Users/m1/code/pdf-notes/PDFNotes/PDFNotesApp.swift
+/Users/m1/code/pdf-notes/PDFNotes/ViewModels/DocumentStore.swift
+/Users/m1/code/pdf-notes/PDFNotes/Views/AnnotationToolbar.swift
+/Users/m1/code/pdf-notes/PDFNotes/Views/ContentView.swift
+/Users/m1/code/pdf-notes/PDFNotes/Views/FileBrowserView.swift
+/Users/m1/code/pdf-notes/PDFNotes/Views/OutlineSidebarView.swift
+/Users/m1/code/pdf-notes/PDFNotes/Views/PDFViewRepresentable.swift

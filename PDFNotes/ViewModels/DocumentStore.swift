@@ -19,8 +19,10 @@ final class DocumentStore: ObservableObject {
     let annotationStore = AnnotationStore()
     #endif
 
-    private var pdfDocument: PDFDocument?
-
+private var _pdfDocument: PDFDocument?
+    
+    var pdfDocument: PDFDocument? { _pdfDocument }
+    
     func loadDocument(at url: URL) {
         isLoading = true
         errorMessage = nil
@@ -33,7 +35,7 @@ final class DocumentStore: ObservableObject {
             return
         }
 
-        self.pdfDocument = document
+        self._pdfDocument = document
         selectedDocument = Document(url: url)
         
         #if os(iOS)
@@ -62,7 +64,7 @@ final class DocumentStore: ObservableObject {
         flushAnnotations()
         #endif
 
-        pdfDocument = nil
+        _pdfDocument = nil
         selectedDocument = nil
         errorMessage = nil
         outlineItems.removeAll()
