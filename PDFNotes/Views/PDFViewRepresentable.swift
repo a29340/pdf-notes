@@ -54,6 +54,24 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
         canvas.isHidden = true
 
+        let initialDrawing = self.annotationStore.drawing(for: 1)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak canvas, weak pdfView] in
+            guard let page = pdfView?.document?.page(at: 0),
+                  let canvas = canvas,
+                  let pdfView = pdfView else { return }
+            let pageBounds = page.bounds(for: .mediaBox)
+            let scale = pdfView.scaleFactor
+            let targetFrame = CGRect(
+                x: 0,
+                y: 0,
+                width: pageBounds.width * scale,
+                height: pageBounds.height * scale
+            )
+            canvas.frame = targetFrame
+            canvas.drawing = initialDrawing
+        }
+
         return container
     }
 

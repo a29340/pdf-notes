@@ -122,6 +122,31 @@ struct ContentView: View {
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
             }
+
+            Button {
+                scale = 1.0
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.title3)
+            }
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    store.toggleAnnotations()
+                }
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+            }
+
+            Button {
+                store.reset()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.red)
+            }
         }
         .padding(8)
         .background(.ultraThinMaterial)
