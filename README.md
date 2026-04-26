@@ -73,6 +73,8 @@ Key design patterns:
 
 ### Option B: Generate with Tuist (recommended)
 
+This repository includes a `Project.swift` manifest that defines both the iOS and macOS targets.
+
 ```bash
 brew install tuist
 
@@ -81,30 +83,7 @@ tuist generate
 open PDFNotes.xcworkspace
 ```
 
-This requires a `Project.swift` manifest. A minimal one:
-
-```swift
-import ProjectDescription
-
-let project = Project(
-    name: "PDFNotes",
-    targets: [
-        Target(
-            name: "PDFNotes",
-            platform: .iOS,
-            product: .app,
-            productName: "PDFNotes",
-            sources: ["PDFNotes/**/*.swift"],
-            resources: ["PDFNotes/Assets.xcassets", "PDFNotes/Info.plist"],
-            dependencies: [.framework("PencilKit"), .framework("PDFKit")],
-            infoPlist: .extendingDefault(with: [
-                "UIFileSharingEnabled": true,
-                "LSSupportsOpeningDocumentsInPlace": true,
-            ])
-        )
-    ]
-)
-```
+The manifest creates two schemes — select **PDFNotes** for iOS or **PDFNotesMac** for macOS from Xcode's scheme dropdown.
 
 ## Deploying to an iPad (Test Device)
 
