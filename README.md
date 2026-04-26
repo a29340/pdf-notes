@@ -28,29 +28,32 @@ A cross-platform Apple app (iOS + macOS) for reading PDFs with Apple Pencil anno
 ## Architecture
 
 ```
-PDFNotes/
-├── PDFNotesApp.swift              # @main entry, Scene setup, macOS menu commands
-├── Info.plist                     # iOS file access entitlements
-├── Assets.xcassets/               # AccentColor, AppIcon
-├── Models/
-│   ├── Document.swift             # Value type: URL + display name
-│   ├── AnnotationStore.swift      # PKDrawing dict, dirty set, per-page file I/O
-│   ├── CloudDocumentManager.swift # iCloud ubiquity container: init, list, copy, delete
-│   └── OutlineItem.swift          # Recursive tree model from PDFDocument.outlineItems
-├── ViewModels/
-│   └── DocumentStore.swift        # ObservableObject: cloud docs, loading, annotations, outline
-└── Views/
-    ├── ContentView.swift          # Router + NavigationSplitView; platform-specific branches
-    ├── FileBrowserView.swift      # iCloud doc list + import picker (iOS UIDocumentPicker / macOS NSOpenPanel)
-    ├── OutlineSidebarView.swift   # Hierarchical List sidebar with page-number badges
-    ├── PDFViewRepresentable.swift # UIViewRepresentable (iOS) / NSViewRepresentable (macOS) for PDFKit + PencilKit
-    └── AnnotationToolbar.swift    # Two-row bottom toolbar: tools, colors, nav, zoom, clear (iOS only)
+├── Project.swift                      # Tuist project manifest (generates .xcworkspace)
+└── PDFNotes/
+    ├── PDFNotesApp.swift              # @main entry, Scene setup, macOS menu commands
+    ├── Info.plist                     # iOS file access entitlements
+    ├── PDFNotes.entitlements          # iOS: iCloud Documents capability
+    ├── PDFNotesMac.entitlements       # macOS: iCloud Documents capability
+    ├── Assets.xcassets/               # AccentColor, AppIcon
+    ├── Models/
+    │   ├── Document.swift             # Value type: URL + display name
+    │   ├── AnnotationStore.swift      # PKDrawing dict, dirty set, per-page file I/O
+    │   ├── CloudDocumentManager.swift # iCloud ubiquity container: init, list, copy, delete
+    │   └── OutlineItem.swift          # Recursive tree model from PDFDocument.outlineItems
+    ├── ViewModels/
+    │   └── DocumentStore.swift        # ObservableObject: cloud docs, loading, annotations, outline
+    └── Views/
+        ├── ContentView.swift          # Router + NavigationSplitView; platform-specific branches
+        ├── FileBrowserView.swift      # iCloud doc list + import picker (iOS UIDocumentPicker / macOS NSOpenPanel)
+        ├── OutlineSidebarView.swift   # Hierarchical List sidebar with page-number badges
+        ├── PDFViewRepresentable.swift # UIViewRepresentable (iOS) / NSViewRepresentable (macOS) for PDFKit + PencilKit
+        └── AnnotationToolbar.swift    # Two-row bottom toolbar: tools, colors, nav, zoom, clear (iOS only)
 ```
 
 Key design patterns:
 
 - **MVVM** — `Document`/`OutlineItem`/`AnnotationStore` (models), `CloudDocumentManager` (iCloud service), `DocumentStore` (view model), SwiftUI views
-- **Conditional compilation** — `#if os(iOS)` / `#if os(macOS)` keeps platform-specific code in shared files
+- **Conditional compilation** — `#if os(iOS)` / `#if os(macOS)` keeps platform-specific code in shared files; single source tree builds both targets
 - **Coordinator pattern** — UIKit bridging via `UIViewRepresentable.Coordinator`; implements `PKCanvasViewDelegate` to save drawings after each stroke
 
 ## Requirements
@@ -65,15 +68,34 @@ Key design patterns:
 Before building, you must configure iCloud in your Apple Developer account:
 
 1. Go to [Apple Developer Portal](https://developer.apple.com/account) → Certificates, Identifiers & Profiles
-2. Find your app's bundle ID (e.g., `com.pdfnotes.app`) and edit it
+2. Find (or create) your app's bundle ID (`com.pdfnotes.app` for iOS, `com.pdfnotes.app.mac` for macOS) and edit it
 3. Enable **iCloud** capability and add a new container with identifier `iCloud.com.pdfnotes.app`
 4. Save the changes — Xcode will regenerate provisioning profiles on next build
 
-If using a custom bundle ID, update `Bundle.main.bundleIdentifier` fallback in `DocumentStore.init()` to match your iCloud container's base name.
+If using custom bundle IDs, update:
+- `Project.swift` → each target's `bundleIdentifier`
+- `PDFNotes/PDFNotes.entitlements` and `PDFNotes/PDFNotesMac.entitlements` → matching container identifiers
+- `DocumentStore.init()` fallback string to match your iOS iCloud container base name
 
 ## Building the Project
 
-### Option A: Create an Xcode project manually
+### Option A: Generate with Tuist (recommended)
+
+The repository includes a ready-to-use `Project.swift` manifest at the root that defines both iOS and macOS targets.
+
+```bash
+brew install tuist
+
+# From this repository root:
+tuist generate
+open PDFNotes.xcworkspace
+
+# Select your team in Signing & Capabilities for each target, then build
+```
+
+This generates a `.xcworkspace` with two schemes: **PDFNotes** (iOS) and **PDFNotesMac** (macOS), sharing the same Swift sources via `#if os(iOS)` conditional compilation. The entitlements files (`PDFNotes.entitlements`, `PDFNotesMac.entitlements`) configure iCloud Documents for each target.
+
+### Option B: Create an Xcode project manually
 
 1. Open Xcode → **File > New > Project** → **iOS App**
 2. Name it `PDFNotes`, interface **SwiftUI**, lifecycle **SwiftUI App**, language **Swift**
@@ -90,42 +112,6 @@ If using a custom bundle ID, update `Bundle.main.bundleIdentifier` fallback in `
 8. For the iOS target, verify **PencilKit** is linked:
    - Project > PDFNotes target > General > Frameworks, Libraries, and Embedded Content
    - Add `PencilKit.framework` if not present
-
-### Option B: Generate with Tuist (recommended)
-
-```bash
-brew install tuist
-
-# From this repository root:
-tuist generate
-open PDFNotes.xcworkspace
-```
-
-This requires a `Project.swift` manifest. A minimal one:
-
-```swift
-import ProjectDescription
-
-let project = Project(
-    name: "PDFNotes",
-    targets: [
-        Target(
-            name: "PDFNotes",
-            platform: .iOS,
-            product: .app,
-            productName: "PDFNotes",
-            sources: ["PDFNotes/**/*.swift"],
-            resources: ["PDFNotes/Assets.xcassets", "PDFNotes/Info.plist"],
-            dependencies: [.framework("PencilKit"), .framework("PDFKit")],
-            infoPlist: .extendingDefault(with: [
-                "UIFileSharingEnabled": true,
-                "LSSupportsOpeningDocumentsInPlace": true,
-            ]),
-            capabilities: [.iCloud(cloudKit: nil, documents: ["iCloud.com.pdfnotes.app"], keyvalueStorage: false)]
-        )
-    ]
-)
-```
 
 ## Deploying to an iPad (Test Device)
 
