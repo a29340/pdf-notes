@@ -44,11 +44,6 @@ struct FileBrowserView: View {
             .buttonStyle(.plain)
             .onTapGesture { store.loadFromCloud(doc) }
         }
-        .listStyle(.plain)
-
-        #if os(iOS)
-        .onDelete(perform: deleteDocuments)
-        #endif
     }
 
     private var emptyState: some View {

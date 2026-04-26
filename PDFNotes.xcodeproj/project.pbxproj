@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 55;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -22,7 +22,6 @@
 		664172A72D78F6FE781738D4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2704763A54175BAA495A9E31 /* Assets.xcassets */; };
 		68747F3B0504D7C22AD2ED0C /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 04470747D14997DA5536EAFA /* PDFKit.framework */; };
 		694DBBC46736A1D15F682F97 /* PDFKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4DF0A0B2A8094D6830F31B54 /* PDFKit.framework */; };
-		788B8D45DE48A59452772AA8 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB74A695653A0222CF1E54E7 /* Info.plist */; };
 		8592193805102A358B19E55F /* AnnotationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 023661A2049E7E3DB449600E /* AnnotationStore.swift */; };
 		96F8E1D4881E09C23EB230FC /* FileBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C65999A81D410F89C8A7EB34 /* FileBrowserView.swift */; };
 		9A0A3D0E91A1642A41A56977 /* OutlineItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69FE0CA14C4C3369EAE2A715 /* OutlineItem.swift */; };
@@ -35,7 +34,6 @@
 		D59930D7343885AD2FB570BF /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C92E65660240EB9AD4ED0B5 /* Document.swift */; };
 		D77AE8DD7F949C62982E2339 /* CloudDocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4878BED75CF69AC5A38B742E /* CloudDocumentManager.swift */; };
 		E0FA5439541CC8FA803BE6DF /* CloudDocumentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4878BED75CF69AC5A38B742E /* CloudDocumentManager.swift */; };
-		E1288E4851B6B7B963E453F3 /* TuistPlists+PDFNotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A22F3F236B399AF0476396 /* TuistPlists+PDFNotes.swift */; };
 		E38EC789D8DE5AC2DC82FBBC /* OutlineSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4166E47C1878C84C30EA345C /* OutlineSidebarView.swift */; };
 		F3FE5F0D85904B743AE89802 /* AnnotationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 023661A2049E7E3DB449600E /* AnnotationStore.swift */; };
 		F4783EF863C8B33EB284C4A0 /* OutlineSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4166E47C1878C84C30EA345C /* OutlineSidebarView.swift */; };
@@ -69,7 +67,6 @@
 		018513C82BD477263FCAEC8B /* PDFNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFNotesApp.swift; sourceTree = "<group>"; };
 		023661A2049E7E3DB449600E /* AnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationStore.swift; sourceTree = "<group>"; };
 		04470747D14997DA5536EAFA /* PDFKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PDFKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/System/Library/Frameworks/PDFKit.framework; sourceTree = DEVELOPER_DIR; };
-		07A22F3F236B399AF0476396 /* TuistPlists+PDFNotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TuistPlists+PDFNotes.swift"; sourceTree = "<group>"; };
 		12680E96201F145B6FFC8201 /* TuistAssets+PDFNotesMac.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TuistAssets+PDFNotesMac.swift"; sourceTree = "<group>"; };
 		1EADBA93FEF5F538B005C791 /* PDFNotes.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PDFNotes.entitlements; sourceTree = "<group>"; };
 		2704763A54175BAA495A9E31 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -85,7 +82,6 @@
 		69FE0CA14C4C3369EAE2A715 /* OutlineItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutlineItem.swift; sourceTree = "<group>"; };
 		7087BFAF801B6F5C04676573 /* TuistAssets+PDFNotes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TuistAssets+PDFNotes.swift"; sourceTree = "<group>"; };
 		9130ACDFC016F631BDE199B4 /* PDFNotes-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "PDFNotes-Info.plist"; sourceTree = "<group>"; };
-		AB74A695653A0222CF1E54E7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C65999A81D410F89C8A7EB34 /* FileBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileBrowserView.swift; sourceTree = "<group>"; };
 		D7A5C2840F08B630F46BD1ED /* DocumentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentStore.swift; sourceTree = "<group>"; };
 		D7BB14C64822C9B2E6463607 /* PDFNotesMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PDFNotesMac.entitlements; sourceTree = "<group>"; };
@@ -173,7 +169,6 @@
 				12680E96201F145B6FFC8201 /* TuistAssets+PDFNotesMac.swift */,
 				4C33C54714CD482804ED4282 /* TuistBundle+PDFNotes.swift */,
 				DEDA02ECB31E345F78589E02 /* TuistBundle+PDFNotesMac.swift */,
-				07A22F3F236B399AF0476396 /* TuistPlists+PDFNotes.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -203,7 +198,6 @@
 				CA821EDC83A2E2358C4F32BD /* ViewModels */,
 				257276ABB9D712177A52FF5F /* Views */,
 				2704763A54175BAA495A9E31 /* Assets.xcassets */,
-				AB74A695653A0222CF1E54E7 /* Info.plist */,
 				1EADBA93FEF5F538B005C791 /* PDFNotes.entitlements */,
 				018513C82BD477263FCAEC8B /* PDFNotesApp.swift */,
 				D7BB14C64822C9B2E6463607 /* PDFNotesMac.entitlements */,
@@ -279,8 +273,6 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = 4608779C95B97251FAA92D29 /* Build configuration list for PBXProject "PDFNotes" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -307,7 +299,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				664172A72D78F6FE781738D4 /* Assets.xcassets in Resources */,
-				788B8D45DE48A59452772AA8 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -348,7 +339,6 @@
 			files = (
 				C2D118B69E37A269A8057C03 /* TuistAssets+PDFNotes.swift in Sources */,
 				CDE1744E6F02EA5407BA0144 /* TuistBundle+PDFNotes.swift in Sources */,
-				E1288E4851B6B7B963E453F3 /* TuistPlists+PDFNotes.swift in Sources */,
 				8592193805102A358B19E55F /* AnnotationStore.swift in Sources */,
 				D77AE8DD7F949C62982E2339 /* CloudDocumentManager.swift in Sources */,
 				D4D01175C353649E9F08C2B6 /* Document.swift in Sources */,
@@ -373,6 +363,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PDFNotes/PDFNotes.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = "Derived/InfoPlists/PDFNotes-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -518,8 +509,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PDFNotes/PDFNotesMac.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = "Derived/InfoPlists/PDFNotesMac-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -533,6 +526,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.pdfnotes.app.mac;
 				PRODUCT_NAME = PDFNotesMac;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
@@ -545,8 +539,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PDFNotes/PDFNotesMac.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = "Derived/InfoPlists/PDFNotesMac-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -560,11 +556,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.pdfnotes.app.mac;
 				PRODUCT_NAME = PDFNotesMac;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
-					"$(inherited)",
-					DEBUG,
-				);
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -577,6 +571,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PDFNotes/PDFNotes.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = "Derived/InfoPlists/PDFNotes-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -594,10 +589,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = (
-					"$(inherited)",
-					DEBUG,
-				);
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TARGETED_DEVICE_FAMILY = "1,2";

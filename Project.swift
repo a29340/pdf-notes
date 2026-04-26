@@ -35,7 +35,6 @@ let project = Project(
             sources: ["PDFNotes/**/*.swift"],
             resources: [
                 "PDFNotes/Assets.xcassets",
-                "PDFNotes/Info.plist",
             ],
             entitlements: "PDFNotes/PDFNotes.entitlements",
             dependencies: [

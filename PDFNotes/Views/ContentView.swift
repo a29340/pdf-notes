@@ -29,68 +29,33 @@ struct ContentView: View {
     #if os(iOS)
     @ViewBuilder
     private func pdfVieweriOS(document: Document) -> some View {
-        guard let pdfDoc = PDFDocument(url: document.url) else {
-            return FileBrowserView()
-        }
+        if let pdfDoc = PDFDocument(url: document.url) {
+            NavigationSplitView {
+                if !store.outlineItems.isEmpty {
+                    OutlineSidebarView()
+                        .navigationSplitViewColumnWidth(min: 200, ideal: 260)
+                }
+            } detail: {
+                ZStack(alignment: .topTrailing) {
+                    PDFViewRepresentable(
+                        scale: $scale,
+                        annotationsEnabled: $store.annotationsEnabled,
+                        currentTool: $store.currentTool,
+                        currentColor: $store.currentColor,
+                        currentPageIndex: $store.currentPageIndex,
+                        pdfDocument: pdfDoc,
+                        annotationStore: store.annotationStore
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-        NavigationSplitView {
-            if !store.outlineItems.isEmpty {
-                OutlineSidebarView()
-                    .navigationSplitViewColumnWidth(min: 200, ideal: 260)
-            }
-        } detail: {
-            ZStack(alignment: .topTrailing) {
-                PDFViewRepresentable(
-                    scale: $scale,
-                    annotationsEnabled: $store.annotationsEnabled,
-                    currentTool: $store.currentTool,
-                    currentColor: $store.currentColor,
-                    currentPageIndex: $store.currentPageIndex,
-                    pdfDocument: pdfDoc,
-                    annotationStore: store.annotationStore
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                if !store.annotationsEnabled {
-                    zoomControls
+                    if !store.annotationsEnabled {
+                        zoomControls
+                    }
                 }
             }
+        } else {
+            FileBrowserView()
         }
-        
-        #if os(iOS)
-        .safeAreaInset(edge: .bottom) {
-            if store.annotationsEnabled {
-                AnnotationToolbar(
-                    currentTool: $store.currentTool,
-                    currentColor: $store.currentColor,
-                    currentPageIndex: $store.currentPageIndex,
-                    scale: $scale,
-                    pageCount: pdfDoc.pageCount,
-                    onToolChange: { tool in store.setTool(tool) },
-                    onColorChange: { store.cycleColor() },
-                    onClearPage: { store.clearAnnotations(page: store.currentPageIndex) },
-                    onClearAll: { store.clearAnnotations() },
-                    onPagePrev: { store.goToPage(store.currentPageIndex - 1) },
-                    onPageNext: { store.goToPage(store.currentPageIndex + 1) },
-                    onToggleAnnotations: { store.toggleAnnotations() }
-                )
-            } else {
-                Color.clear.frame(height: 0)
-            }
-        }
-        
-        .overlay(alignment: .topLeading) {
-            if !store.outlineItems.isEmpty && UIDevice.current.userInterfaceIdiom != .pad {
-                outlineButton
-            }
-        }
-        .sheet(isPresented: $showOutlineSheet) {
-            NavigationView {
-                OutlineSidebarView()
-                    .navigationTitle("Contents")
-            }
-        }
-        #endif
     }
 
     @ViewBuilder

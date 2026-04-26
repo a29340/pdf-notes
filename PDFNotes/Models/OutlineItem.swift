@@ -8,22 +8,24 @@ struct OutlineItem: Identifiable {
     let destinationPageIndex: Int?
 }
 
-#if os(iOS)
 extension OutlineItem {
-    init(pdfOutline: PDFOutline) {
+    init(pdfOutline: PDFOutline, document: PDFDocument? = nil) {
         self.title = pdfOutline.label ?? ""
         
-        if let page = pdfOutline.destination?.page,
-           let pageIndex = page.pageIndex {
-            self.destinationPageIndex = Int(pageIndex) + 1
+        if let page = pdfOutline.destination?.page {
+            if let doc = document {
+                self.destinationPageIndex = doc.index(for: page) + 1
+            } else {
+                self.destinationPageIndex = nil
+            }
         } else {
             self.destinationPageIndex = nil
         }
         
         var children: [OutlineItem] = []
-        for i in 0..<pdfOutline.childrenCount {
+        for i in 0..<pdfOutline.numberOfChildren {
             if let child = pdfOutline.child(at: i) {
-                children.append(OutlineItem(pdfOutline: child))
+                children.append(OutlineItem(pdfOutline: child, document: document))
             }
         }
         self.children = children
@@ -32,21 +34,14 @@ extension OutlineItem {
     static func extractAll(from document: PDFDocument) -> [OutlineItem] {
         var items: [OutlineItem] = []
         
-        guard let rootOutlines = document.outlineItems else { return items }
+        guard let rootOutlines = document.outlineRoot else { return items }
         
-        for i in 0..<rootOutlines.count {
-            if let outline = rootOutlines[i] as? PDFOutline {
-                items.append(OutlineItem(pdfOutline: outline))
+        for i in 0..<rootOutlines.numberOfChildren {
+            if let outline = rootOutlines.child(at: i) {
+                items.append(OutlineItem(pdfOutline: outline, document: document))
             }
         }
         
         return items
     }
 }
-#else
-extension OutlineItem {
-    static func extractAll(from document: PDFDocument) -> [OutlineItem] {
-        return []
-    }
-}
-#endif

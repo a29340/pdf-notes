@@ -107,6 +107,7 @@ final class CloudDocumentManager {
             .appendingPathComponent("annotations", isDirectory: true)
     }
 
+    @MainActor
     func createAnnotationsDirectory(for doc: Document) -> URL? {
         guard let annotationsDir = annotationsDirectory(for: doc),
               let docsURL = documentsURL else { return nil }
@@ -136,30 +137,17 @@ final class CloudDocumentManager {
     }
 
     private func downloadIfNeeded(_ url: URL) -> Bool {
-        do {
-            let resourceValues = try url.resourceValues(forKeys: [.ubiquitousItemIsDownloadedKey])
-            if !resourceValues.ubiquitousItemIsDownloaded ?? true {
-                FileManager.default.startDownloadingUbiquitousItem(
-                    at: url,
-                    options: []
-                ) { success in
-                    if success {
-                        print("[iCloud] Downloaded: \(url.lastPathComponent)")
-                    } else {
-                        print("[iCloud] Failed to download: \(url.lastPathComponent)")
-                    }
-                }
-                return false
-            }
-        } catch {
-            assertionFailure("Failed to check download status: \(error.localizedDescription)")
-            return true
-        }
-
         if FileManager.default.fileExists(atPath: url.path) {
             return true
         }
-        return false
+
+        do {
+            try FileManager.default.startDownloadingUbiquitousItem(at: url)
+            return false
+        } catch {
+            assertionFailure("Failed to start downloading: \(error.localizedDescription)")
+            return false
+        }
     }
 
     private func sanitizeFileName(from url: URL) -> String {

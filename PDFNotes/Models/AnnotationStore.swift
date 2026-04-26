@@ -1,5 +1,4 @@
 import Foundation
-import AppKit
 import PencilKit
 import SwiftUI
 
@@ -7,6 +6,7 @@ import SwiftUI
 import UIKit
 typealias PlatformColor = UIColor
 #else
+import AppKit
 typealias PlatformColor = NSColor
 #endif
 
@@ -58,69 +58,42 @@ final class AnnotationStore {
     var color: AnnotationColor = .blue
     var annotationsEnabled = false
 
-    func drawing(for page: Int) -> PKDrawing {
-        return drawings[page] ?? PKDrawing()
-    }
+    static let fileExtension = "pencil"
 
     func setDrawing(_ drawing: PKDrawing, for page: Int) {
-        if drawing.strokes.isEmpty {
-            if drawings[page] != nil {
-                dirtyPages.insert(page)
-            }
-            drawings.removeValue(forKey: page)
-        } else {
-            drawings[page] = drawing
-            dirtyPages.insert(page)
-        }
-    }
-
-    func markDirty(_ page: Int) {
+        drawings[page] = drawing
         dirtyPages.insert(page)
     }
 
-    func clearPage(_ page: Int) {
-        if drawings[page] != nil {
-            dirtyPages.insert(page)
-        }
-        drawings.removeValue(forKey: page)
-    }
-
-    func clearAll() {
-        for key in drawings.keys {
-            dirtyPages.insert(key)
-        }
-        drawings.removeAll()
+    func drawing(for page: Int) -> PKDrawing? {
+        drawings[page]
     }
 
     @MainActor
     func saveDirtyDrawings() async {
-        guard let baseURL = baseURL, !dirtyPages.isEmpty else { return }
+        guard let baseURL = baseURL else { return }
 
-        for page in dirtyPages {
-            if let drawing = drawings[page] {
-                saveDrawing(drawing, to: baseURL, page: page)
-            } else {
-                removeFile(for: baseURL, page: page)
-            }
+        for index in dirtyPages {
+            guard let drawing = drawings[index] else { continue }
+            saveDrawing(drawing, to: baseURL, page: index)
         }
-
         dirtyPages.removeAll()
     }
 
-    @MainActor
-    func loadDrawings(pageCount: Int) async {
-        #if os(iOS)
-        guard let baseURL = baseURL else { return }
+    private func saveDrawing(_ drawing: PKDrawing, to baseURL: URL, page: Int) {
+        let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
+        let data = drawing.dataRepresentation()
 
-        drawings.removeAll()
-        dirtyPages.removeAll()
-
-        for index in 1...pageCount {
-            if let drawing = loadDrawing(from: baseURL, page: index) {
-                drawings[index] = drawing
-            }
+        do {
+            try data.write(to: fileURL)
+        } catch {
+            assertionFailure("Failed to save drawing for page \(page): \(error.localizedDescription)")
         }
-        #endif
+    }
+
+    private func removeFile(for baseURL: URL, page: Int) {
+        let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
+        try? FileManager.default.removeItem(at: fileURL)
     }
 
     func nextColor() {
@@ -139,44 +112,33 @@ final class AnnotationStore {
         baseURL = nil
     }
 
-    // MARK: - File I/O
-
-    private static let fileExtension = "drawing"
-
-    private func fileURL(for page: Int) -> URL {
-        return baseURL!.appendingPathComponent("page_\(page).\(Self.fileExtension)")
-    }
-
-    private func saveDrawing(_ drawing: PKDrawing, to baseURL: URL, page: Int) {
-        guard let data = try? NSKeyedArchiver.archivedData(
-            withRootObject: drawing,
-            requiringSecureCoding: true
-        ) else { return }
-
-        let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
-        do {
-            try data.write(to: fileURL)
-        } catch {
-            assertionFailure("Failed to save drawing for page \(page): \(error.localizedDescription)")
+    func loadDrawings(pageCount: Int) async {
+        guard let baseURL = baseURL else { return }
+        
+        drawings.removeAll()
+        dirtyPages.removeAll()
+        
+        for index in 1...pageCount {
+            let fileURL = baseURL.appendingPathComponent("page_\(index).\(Self.fileExtension)")
+            if FileManager.default.fileExists(atPath: fileURL.path),
+               let data = try? Data(contentsOf: fileURL),
+               let drawing = try? PKDrawing(data: data) {
+                drawings[index] = drawing
+            }
         }
     }
-    #if os(iOS)
-    private func loadDrawing(from baseURL: URL, page: Int) -> PKDrawing? {
-        let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
 
-        guard FileManager.default.fileExists(atPath: fileURL.path),
-              let data = try? Data(contentsOf: fileURL),
-              let drawing = try? NSKeyedUnarchiver.unarchivedObject(
-                  ofClass: PKDrawing.self,
-                  from: data
-              ) else { return nil }
-
-        return drawing
+    func clearPage(_ page: Int) {
+        drawings.removeValue(forKey: page)
+        dirtyPages.insert(page)
     }
-    #endif
 
-    private func removeFile(for baseURL: URL, page: Int) {
-        let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
-        try? FileManager.default.removeItem(at: fileURL)
+    func clearAll() {
+        drawings.removeAll()
+        dirtyPages.removeAll()
+    }
+
+    func markDirty(_ page: Int) {
+        dirtyPages.insert(page)
     }
 }
