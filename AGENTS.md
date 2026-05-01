@@ -21,8 +21,8 @@ Drawings saved per-page as `.drawing` files: `/Documents/{pdf_name}/annotations/
 ## Info.plist Entitlements
 `UIFileSharingEnabled`, `LSSupportsOpeningDocumentsInPlace`, and custom PDF UTType declaration are in `PDFNotes/Info.plist`. Changes here affect file picker behavior and Files app visibility.
 
-## Build Artifacts (No .gitignore)
-The repo has no `.gitignore`. `build/` (Xcode build output) and `Derived/` (Tuist generated plists) are artifacts committed to the working tree. If creating a `.gitignore`, add both.
+## Build Artifacts
+`.gitignore` excludes `build/` (Xcode build output) and `Derived/` (Tuist generated plists).
 
 ## Tuist Manifest
 `Project.swift` defines both targets. Both use `sources: ["PDFNotes/**"]` with no external dependencies. Adding a new dependency or source group requires editing this file followed by `tuist generate`.
