@@ -31,9 +31,11 @@ struct AnnotationToolbar: View {
 
     private var primaryControls: some View {
         HStack(spacing: 0) {
-            toolButton(.pen, "pencil", label: "Pen")
-            toolButton(.highlighter, "highlighter", label: "Highlight")
-            toolButton(.eraser, "eraser.fill", label: "Eraser")
+            HStack(spacing: 8) {
+                toolButton(.pen, "pencil", label: "Pen")
+                toolButton(.highlighter, "highlighter", label: "Highlight")
+                toolButton(.eraser, "eraser.fill", label: "Eraser")
+            }
 
             Spacer()
 
@@ -48,21 +50,27 @@ struct AnnotationToolbar: View {
 
     private var secondaryControls: some View {
         HStack(spacing: 0) {
-            navButton(action: onPagePrev, icon: "chevron.left", label: "Prev")
-            .disabled(currentPageIndex <= 1)
+            HStack(spacing: 8) {
+                navButton(action: onPagePrev, icon: "chevron.left", label: "Prev")
+                    .disabled(currentPageIndex <= 1)
 
-            navButton(action: onPageNext, icon: "chevron.right", label: "Next")
-            .disabled(currentPageIndex >= pageCount)
-
-            Spacer()
-
-            zoomOutButton
-            zoomInButton
+                navButton(action: onPageNext, icon: "chevron.right", label: "Next")
+                    .disabled(currentPageIndex >= pageCount)
+            }
 
             Spacer()
 
-            clearButton(onClearPage)
-            clearButton(onClearAll, label: "all")
+            HStack(spacing: 8) {
+                zoomOutButton
+                zoomInButton
+            }
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                clearButton(onClearPage)
+                clearButton(onClearAll, label: "all")
+            }
 
             Spacer()
 
