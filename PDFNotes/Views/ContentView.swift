@@ -62,8 +62,14 @@ struct ContentView: View {
                         pageCount: store.pdfDocument?.pageCount ?? 0,
                         onToolChange: { tool in store.setTool(tool) },
                         onColorChange: { store.cycleColor() },
-                        onClearPage: { store.clearAnnotations(page: store.currentPageIndex) },
-                        onClearAll: { store.clearAnnotations() },
+                        onClearPage: {
+                            store.annotationStore.clearCurrentCanvasPage()
+                            store.clearAnnotations(page: store.currentPageIndex)
+                        },
+                        onClearAll: {
+                            store.annotationStore.clearAllCanvases()
+                            store.clearAnnotations()
+                        },
                         onPagePrev: { store.goToPage(store.currentPageIndex - 1) },
                         onPageNext: { store.goToPage(store.currentPageIndex + 1) },
                         onToggleAnnotations: { store.toggleAnnotations() }

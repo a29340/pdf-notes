@@ -59,6 +59,7 @@ final class AnnotationStore {
     var tool: AnnotationTool = .pen
     var color: AnnotationColor = .blue
     var annotationsEnabled = false
+    weak var canvasView: PKCanvasView?
 
     func drawing(for page: Int) -> PKDrawing {
         return drawings[page] ?? PKDrawing()
@@ -137,6 +138,15 @@ final class AnnotationStore {
         drawings.removeAll()
         dirtyPages.removeAll()
         baseURL = nil
+        canvasView = nil
+    }
+
+    func clearCurrentCanvasPage() {
+        canvasView?.drawing = PKDrawing()
+    }
+
+    func clearAllCanvases() {
+        canvasView?.drawing = PKDrawing()
     }
 
     private static let fileExtension = "drawing"

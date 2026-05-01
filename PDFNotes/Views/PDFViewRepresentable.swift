@@ -51,6 +51,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
         coordinator.pdfView = pdfView
         coordinator.canvas = canvas
         coordinator.currentPageIndex = 1
+        annotationStore.canvasView = canvas
 
         canvas.isHidden = true
 
