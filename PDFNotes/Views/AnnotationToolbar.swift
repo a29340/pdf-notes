@@ -3,10 +3,10 @@ import SwiftUI
 #if os(iOS)
 
 struct AnnotationToolbar: View {
+    var annotationsEnabled: Bool
     @Binding var currentTool: AnnotationTool
     @Binding var currentColor: AnnotationColor
     @Binding var currentPageIndex: Int
-    @Binding var scale: CGFloat
     var pageCount: Int
     var onToolChange: (AnnotationTool) -> Void
     var onColorChange: () -> Void
@@ -18,10 +18,14 @@ struct AnnotationToolbar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            primaryControls
-            Divider()
-                .background(Color.white.opacity(0.3))
-            secondaryControls
+            if annotationsEnabled {
+                primaryControls
+                Divider()
+                    .background(Color.white.opacity(0.3))
+                secondaryControls
+            } else {
+                visualizationControls
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
@@ -61,20 +65,38 @@ struct AnnotationToolbar: View {
             Spacer()
 
             HStack(spacing: 8) {
-                zoomOutButton
-                zoomInButton
-            }
-
-            Spacer()
-
-            HStack(spacing: 8) {
                 clearButton(onClearPage)
                 clearButton(onClearAll, label: "all")
             }
 
             Spacer()
 
-            navButton(action: onToggleAnnotations, icon: "hand.draw", label: "Done")
+            navButton(action: onToggleAnnotations, icon: "checkmark", label: "Done")
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var visualizationControls: some View {
+        HStack(spacing: 0) {
+            Spacer()
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onToggleAnnotations()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "pencil")
+                        .font(.title3)
+                    Text("Annotate")
+                        .font(.subheadline)
+                }
+                .foregroundColor(.orange)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+
+            Spacer()
         }
         .padding(.vertical, 4)
     }
@@ -147,42 +169,6 @@ struct AnnotationToolbar: View {
                     .clipShape(Circle())
 
                 Text(label.uppercased())
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-
-    private var zoomOutButton: some View {
-        Button {
-            scale = max(0.5, scale * 0.8)
-        } label: {
-            VStack(spacing: 2) {
-                Image(systemName: "minus.magnifyingglass")
-                    .font(.title3)
-                    .padding(8)
-                    .background(Color.primary.opacity(0.1))
-                    .clipShape(Circle())
-
-                Text("ZOOM -")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-
-    private var zoomInButton: some View {
-        Button {
-            scale = min(5.0, scale * 1.25)
-        } label: {
-            VStack(spacing: 2) {
-                Image(systemName: "plus.magnifyingglass")
-                    .font(.title3)
-                    .padding(8)
-                    .background(Color.primary.opacity(0.1))
-                    .clipShape(Circle())
-
-                Text("ZOOM +")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

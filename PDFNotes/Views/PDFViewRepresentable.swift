@@ -6,8 +6,17 @@ import PencilKit
 #endif
 
 #if os(iOS)
+
+class MultiTouchCanvas: PKCanvasView {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if let touches = event?.allTouches, touches.count > 1 {
+            return nil
+        }
+        return super.hitTest(point, with: event)
+    }
+}
+
 struct PDFViewRepresentable: UIViewRepresentable {
-    @Binding var scale: CGFloat
     @Binding var annotationsEnabled: Bool
     @Binding var currentTool: AnnotationTool
     @Binding var currentColor: AnnotationColor
@@ -28,8 +37,8 @@ struct PDFViewRepresentable: UIViewRepresentable {
             pdfView.document = document
         }
 
-        let canvas = PKCanvasView()
-        canvas.translatesAutoresizingMaskIntoConstraints = false
+        let canvas = MultiTouchCanvas()
+        canvas.translatesAutoresizingMaskIntoConstraints = true
         canvas.isOpaque = false
         canvas.backgroundColor = .clear
         canvas.delegate = context.coordinator
@@ -40,116 +49,65 @@ struct PDFViewRepresentable: UIViewRepresentable {
             pdfView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             pdfView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             pdfView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-
-            canvas.topAnchor.constraint(equalTo: container.topAnchor),
-            canvas.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            canvas.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            canvas.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
         let coordinator = context.coordinator
         coordinator.pdfView = pdfView
         coordinator.canvas = canvas
-        coordinator.currentPageIndex = 1
+        coordinator.container = container
+        coordinator.annotationsEnabled = annotationsEnabled
+        coordinator.currentTool = currentTool
+        coordinator.currentColor = currentColor
         annotationStore.canvasView = canvas
 
-        canvas.isHidden = true
-
-        let initialDrawing = self.annotationStore.drawing(for: 1)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak canvas, weak pdfView] in
-            guard let page = pdfView?.document?.page(at: 0),
-                  let canvas = canvas,
-                  let pdfView = pdfView else { return }
-            let pageBounds = page.bounds(for: .mediaBox)
-            let scale = pdfView.scaleFactor
-            let targetFrame = CGRect(
-                x: 0,
-                y: 0,
-                width: pageBounds.width * scale,
-                height: pageBounds.height * scale
-            )
-            canvas.frame = targetFrame
-            canvas.drawing = initialDrawing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak coordinator] in
+            guard let c = coordinator else { return }
+            c.syncCanvasToPage(pageIndex: 1)
         }
+
+        coordinator.startPolling()
 
         return container
     }
 
     func updateUIView(_ uiView: UIView, context: Context) {
         let coordinator = context.coordinator
-        guard let pdfView = coordinator.pdfView,
-              let canvas = coordinator.canvas else { return }
+        guard let pdfView = coordinator.pdfView else { return }
 
         if let document = pdfDocument, pdfView.document == nil {
             pdfView.document = document
-        }
-
-        let clampedScale = max(0.5, min(scale, 5.0))
-        pdfView.scaleFactor = clampedScale
-
-        synchronizeCanvas(
-            coordinator: coordinator,
-            canvas: canvas,
-            pdfView: pdfView,
-            targetPage: currentPageIndex
-        )
-
-        canvas.isHidden = !annotationsEnabled
-
-        for gr in pdfView.gestureRecognizers ?? [] {
-            gr.isEnabled = !annotationsEnabled
-        }
-
-        if annotationsEnabled {
-            updateTool(canvas: canvas)
-        }
-    }
-
-    private func synchronizeCanvas(
-        coordinator: Coordinator,
-        canvas: PKCanvasView,
-        pdfView: PDFView,
-        targetPage: Int
-    ) {
-        guard coordinator.currentPageIndex != targetPage else { return }
-
-        let drawing = canvas.drawing
-        annotationStore.setDrawing(drawing, for: coordinator.currentPageIndex)
-
-        if let page = pdfView.document?.page(at: targetPage - 1) {
-            pdfView.go(to: page)
-        }
-
-        coordinator.currentPageIndex = targetPage
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak canvas, weak pdfView] in
-            guard let canvas = canvas,
-                  let pdfView = pdfView,
-                  let _ = pdfView.document?.page(at: targetPage - 1) else { return }
-
-            if let pageBounds = pdfView.document?.page(at: targetPage - 1)?.bounds(for: .mediaBox) {
-                let scale = pdfView.scaleFactor
-                let targetFrame = CGRect(
-                    x: 0,
-                    y: 0,
-                    width: pageBounds.width * scale,
-                    height: pageBounds.height * scale
-                )
-                canvas.frame = targetFrame
-                canvas.drawing = self.annotationStore.drawing(for: targetPage)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak coordinator] in
+                guard let c = coordinator else { return }
+                c.syncCanvasToPage(pageIndex: c.currentPageIndex)
             }
         }
-    }
 
-    private func updateTool(canvas: PKCanvasView) {
-        switch currentTool {
-        case .pen:
-            canvas.tool = PKInkingTool(.pen, color: currentColor.pkInkColor, width: 5)
-        case .highlighter:
-            canvas.tool = PKInkingTool(.marker, color: currentColor.pkInkColor, width: 30)
-        case .eraser:
-            canvas.tool = PKEraserTool(.vector)
+        coordinator.annotationsEnabled = annotationsEnabled
+        coordinator.currentTool = currentTool
+        coordinator.currentColor = currentColor
+
+        if coordinator.currentPageIndex != currentPageIndex {
+            coordinator.saveCurrentDrawing()
+            if let page = pdfView.document?.page(at: currentPageIndex - 1) {
+                pdfView.go(to: page)
+            }
+            coordinator.syncCanvasToPage(pageIndex: currentPageIndex)
+        }
+
+        if let canvas = coordinator.canvas {
+            if annotationsEnabled {
+                canvas.isUserInteractionEnabled = true
+                switch currentTool {
+                case .pen:
+                    canvas.tool = PKInkingTool(.pen, color: currentColor.pkInkColor, width: 5)
+                case .highlighter:
+                    canvas.tool = PKInkingTool(.marker, color: currentColor.pkInkColor, width: 30)
+                case .eraser:
+                    canvas.tool = PKEraserTool(.vector)
+                }
+            } else {
+                canvas.isUserInteractionEnabled = false
+            }
         }
     }
 
@@ -159,12 +117,124 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
     final class Coordinator: NSObject, PKCanvasViewDelegate {
         var pdfView: PDFView?
-        var canvas: PKCanvasView?
+        var canvas: MultiTouchCanvas?
+        var container: UIView?
         var currentPageIndex: Int = 1
+        var annotationsEnabled = false
+        var currentTool: AnnotationTool = .pen
+        var currentColor: AnnotationColor = .blue
         private let store: AnnotationStore
+
+        private var pollTimer: Timer?
+        private var lastVisibleRect: CGRect = .zero
+        private var lastScaleFactor: CGFloat = 1.0
+        private var currentPage: PDFPage?
 
         init(store: AnnotationStore) {
             self.store = store
+        }
+
+        deinit {
+            stopPolling()
+        }
+
+        func startPolling() {
+            pollTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+                self?.pollSync()
+            }
+        }
+
+        func stopPolling() {
+            pollTimer?.invalidate()
+            pollTimer = nil
+        }
+
+        func pollSync() {
+            guard let pdfView = pdfView,
+                  let canvas = canvas,
+                  let container = container,
+                  let document = pdfView.document,
+                  let page = currentPage ?? pdfView.document?.page(at: currentPageIndex - 1) else { return }
+
+            let pageBounds = page.bounds(for: .mediaBox)
+            let visibleRect = pdfView.convert(pageBounds, from: page)
+
+            guard visibleRect.width > 0 && visibleRect.height > 0 else { return }
+
+            currentPage = page
+
+            let scaleFactorChanged = abs(pdfView.scaleFactor - lastScaleFactor) > 0.001
+            let positionChanged = abs(visibleRect.origin.x - lastVisibleRect.origin.x) > 0.5
+                || abs(visibleRect.origin.y - lastVisibleRect.origin.y) > 0.5
+
+            guard scaleFactorChanged || positionChanged else {
+                lastVisibleRect = visibleRect
+                return
+            }
+
+            let oldFrame = canvas.frame
+
+            if scaleFactorChanged && oldFrame.width > 0 && oldFrame.height > 0 {
+                rescaleDrawing(from: oldFrame, to: visibleRect)
+            }
+
+            canvas.frame = visibleRect
+            lastVisibleRect = visibleRect
+            lastScaleFactor = pdfView.scaleFactor
+        }
+
+        func syncCanvasToPage(pageIndex: Int) {
+            guard let pdfView = pdfView,
+                  let canvas = canvas,
+                  let container = container,
+                  let page = pdfView.document?.page(at: pageIndex - 1) else { return }
+
+            currentPageIndex = pageIndex
+            currentPage = page
+
+            let pageBounds = page.bounds(for: .mediaBox)
+            let visibleRect = pdfView.convert(pageBounds, from: page)
+
+            canvas.frame = visibleRect
+            canvas.drawing = store.drawing(for: pageIndex)
+            lastVisibleRect = visibleRect
+            lastScaleFactor = pdfView.scaleFactor
+        }
+
+        func saveCurrentDrawing() {
+            guard let canvas = canvas else { return }
+            let drawing = canvas.drawing
+            store.setDrawing(drawing, for: currentPageIndex)
+            Task { @MainActor in
+                await store.saveDirtyDrawings()
+            }
+        }
+
+        private func rescaleDrawing(from oldFrame: CGRect, to newFrame: CGRect) {
+            guard let canvas = canvas,
+                  oldFrame.width > 0 && oldFrame.height > 0 else { return }
+
+            let scaleX = newFrame.width / oldFrame.width
+            let scaleY = newFrame.height / oldFrame.height
+
+            guard scaleX != 1.0 || scaleY != 1.0 else { return }
+
+            let drawing = canvas.drawing ?? PKDrawing()
+            var newStrokes: [PKStroke] = []
+
+            for stroke in drawing.strokes {
+                let scaleTransform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                var mutatedStroke = stroke
+                mutatedStroke.transform = stroke.transform.concatenating(scaleTransform)
+                newStrokes.append(mutatedStroke)
+            }
+
+            let transformedDrawing = PKDrawing(strokes: newStrokes)
+            canvas.drawing = transformedDrawing
+            store.setDrawing(transformedDrawing, for: currentPageIndex)
+            Task { @MainActor in
+                await store.saveDirtyDrawings()
+            }
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
@@ -180,7 +250,6 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
 #if os(macOS)
 struct PDFViewRepresentable: NSViewRepresentable {
-    @Binding var scale: CGFloat
     var pdfDocument: PDFDocument?
 
     func makeNSView(context: Context) -> PDFView {
@@ -199,7 +268,6 @@ struct PDFViewRepresentable: NSViewRepresentable {
         if let document = pdfDocument, nsView.document == nil {
             nsView.document = document
         }
-        nsView.scaleFactor = scale
     }
 }
 #endif
