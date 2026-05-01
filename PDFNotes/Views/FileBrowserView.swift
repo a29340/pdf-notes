@@ -54,11 +54,24 @@ extension DocumentPickerRepresentable {
             _ controller: UIDocumentPickerViewController,
             didPickDocumentsAt urls: [URL]
         ) {
-            guard let url = urls.first else { return }
-            let accessGranted = url.startAccessingSecurityScopedResource()
-            if accessGranted {
-                parent.store.loadDocument(at: url)
-                url.stopAccessingSecurityScopedResource()
+            guard let sourceURL = urls.first else { return }
+
+            let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            var destinationURL = documentsDir.appendingPathComponent(sourceURL.lastPathComponent)
+            var counter = 1
+
+            while FileManager.default.fileExists(atPath: destinationURL.path) {
+                let name = sourceURL.deletingPathExtension().lastPathComponent
+                let ext = sourceURL.pathExtension
+                destinationURL = documentsDir.appendingPathComponent("\(name) (\(counter)).\(ext)")
+                counter += 1
+            }
+
+            do {
+                try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+                parent.store.loadDocument(at: destinationURL)
+            } catch {
+                parent.store.errorMessage = "Unable to import the PDF file."
             }
         }
 

@@ -79,7 +79,11 @@ struct AnnotationToolbar: View {
 
     @ViewBuilder
     private func toolButton(_ tool: AnnotationTool, _ symbol: String) -> some View {
-        Button {} label: {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                onToolChange(tool)
+            }
+        } label: {
             Image(systemName: symbol)
                 .font(.title3)
                 .foregroundColor(currentTool == tool ? .primary : .secondary)
@@ -91,26 +95,20 @@ struct AnnotationToolbar: View {
                 )
                 .clipShape(Circle())
         }
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                onToolChange(tool)
-            }
-        }
     }
 
     private var colorPicker: some View {
-        Button {} label: {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                onColorChange()
+            }
+        } label: {
             Image(systemName: currentColor.symbolName)
                 .font(.title3)
                 .foregroundColor(currentColor.swiftUIColor)
                 .padding(8)
                 .background(Color.primary.opacity(0.1))
                 .clipShape(Circle())
-        }
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                onColorChange()
-            }
         }
     }
 
@@ -126,52 +124,48 @@ struct AnnotationToolbar: View {
 
     @ViewBuilder
     private func navButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
-        Button {} label: {
+        Button(action: action) {
             label()
                 .font(.title3)
                 .padding(8)
                 .background(Color.primary.opacity(0.1))
                 .clipShape(Circle())
         }
-        .onTapGesture { action() }
     }
 
     private var zoomOutButton: some View {
-        Button {} label: {
+        Button {
+            scale = max(0.5, scale * 0.8)
+        } label: {
             Image(systemName: "minus.magnifyingglass")
                 .font(.title3)
                 .padding(8)
                 .background(Color.primary.opacity(0.1))
                 .clipShape(Circle())
         }
-        .onTapGesture {
-            scale = max(0.5, scale * 0.8)
-        }
     }
 
     private var zoomInButton: some View {
-        Button {} label: {
+        Button {
+            scale = min(5.0, scale * 1.25)
+        } label: {
             Image(systemName: "plus.magnifyingglass")
                 .font(.title3)
                 .padding(8)
                 .background(Color.primary.opacity(0.1))
                 .clipShape(Circle())
         }
-        .onTapGesture {
-            scale = min(5.0, scale * 1.25)
-        }
     }
 
     @ViewBuilder
     private func clearButton(_ action: @escaping () -> Void, label: String = "page") -> some View {
-        Button {} label: {
+        Button(action: action) {
             Image(systemName: "trash")
                 .font(.title3)
                 .padding(8)
                 .background(Color.red.opacity(0.12))
                 .clipShape(Circle())
         }
-        .onTapGesture { action() }
     }
 }
 
