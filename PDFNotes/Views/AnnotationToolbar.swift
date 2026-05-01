@@ -32,8 +32,8 @@ struct AnnotationToolbar: View {
     private var primaryControls: some View {
         HStack(spacing: 0) {
             toolButton(.pen, "pencil", label: "Pen")
-            toolButton(.highlighter, "marker", label: "Highlight")
-            toolButton(.eraser, "erase.fill", label: "Eraser")
+            toolButton(.highlighter, "highlighter", label: "Highlight")
+            toolButton(.eraser, "eraser.fill", label: "Eraser")
 
             Spacer()
 
