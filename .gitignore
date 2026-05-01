@@ -1,0 +1,12 @@
+# Xcode build output
+build/
+
+# Tuist generated files
+Derived/
+
+# macOS
+.DS_Store
+
+# IDE
+*.swp
+*~
