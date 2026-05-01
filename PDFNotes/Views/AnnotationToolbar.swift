@@ -31,9 +31,9 @@ struct AnnotationToolbar: View {
 
     private var primaryControls: some View {
         HStack(spacing: 0) {
-            toolButton(.pen, "pencil")
-            toolButton(.highlighter, "marker")
-            toolButton(.eraser, "erase.fill")
+            toolButton(.pen, "pencil", label: "Pen")
+            toolButton(.highlighter, "marker", label: "Highlight")
+            toolButton(.eraser, "erase.fill", label: "Eraser")
 
             Spacer()
 
@@ -48,14 +48,10 @@ struct AnnotationToolbar: View {
 
     private var secondaryControls: some View {
         HStack(spacing: 0) {
-            navButton(action: onPagePrev) {
-                Image(systemName: "chevron.left")
-            }
+            navButton(action: onPagePrev, icon: "chevron.left", label: "Prev")
             .disabled(currentPageIndex <= 1)
 
-            navButton(action: onPageNext) {
-                Image(systemName: "chevron.right")
-            }
+            navButton(action: onPageNext, icon: "chevron.right", label: "Next")
             .disabled(currentPageIndex >= pageCount)
 
             Spacer()
@@ -70,30 +66,34 @@ struct AnnotationToolbar: View {
 
             Spacer()
 
-            navButton(action: onToggleAnnotations) {
-                Image(systemName: "hand.draw")
-            }
+            navButton(action: onToggleAnnotations, icon: "hand.draw", label: "Done")
         }
         .padding(.vertical, 4)
     }
 
     @ViewBuilder
-    private func toolButton(_ tool: AnnotationTool, _ symbol: String) -> some View {
+    private func toolButton(_ tool: AnnotationTool, _ symbol: String, label: String) -> some View {
         Button {
             withAnimation(.easeInOut(duration: 0.15)) {
                 onToolChange(tool)
             }
         } label: {
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundColor(currentTool == tool ? .primary : .secondary)
-                .padding(8)
-                .background(
-                    currentTool == tool
-                        ? Color.primary.opacity(0.15)
-                        : Color.clear
-                )
-                .clipShape(Circle())
+            VStack(spacing: 2) {
+                Image(systemName: symbol)
+                    .font(.title3)
+                    .foregroundColor(currentTool == tool ? .primary : .secondary)
+                    .padding(8)
+                    .background(
+                        currentTool == tool
+                            ? Color.primary.opacity(0.15)
+                            : Color.clear
+                    )
+                    .clipShape(Circle())
+
+                Text(label.uppercased())
+                    .font(.caption2)
+                    .foregroundColor(currentTool == tool ? .primary : .secondary)
+            }
         }
     }
 
@@ -103,12 +103,18 @@ struct AnnotationToolbar: View {
                 onColorChange()
             }
         } label: {
-            Image(systemName: currentColor.symbolName)
-                .font(.title3)
-                .foregroundColor(currentColor.swiftUIColor)
-                .padding(8)
-                .background(Color.primary.opacity(0.1))
-                .clipShape(Circle())
+            VStack(spacing: 2) {
+                Image(systemName: currentColor.symbolName)
+                    .font(.title3)
+                    .foregroundColor(currentColor.swiftUIColor)
+                    .padding(8)
+                    .background(Color.primary.opacity(0.1))
+                    .clipShape(Circle())
+
+                Text(currentColor.name.uppercased())
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
@@ -123,13 +129,19 @@ struct AnnotationToolbar: View {
     }
 
     @ViewBuilder
-    private func navButton(action: @escaping () -> Void, @ViewBuilder label: () -> some View) -> some View {
+    private func navButton(action: @escaping () -> Void, icon: String, label: String) -> some View {
         Button(action: action) {
-            label()
-                .font(.title3)
-                .padding(8)
-                .background(Color.primary.opacity(0.1))
-                .clipShape(Circle())
+            VStack(spacing: 2) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .padding(8)
+                    .background(Color.primary.opacity(0.1))
+                    .clipShape(Circle())
+
+                Text(label.uppercased())
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
@@ -137,11 +149,17 @@ struct AnnotationToolbar: View {
         Button {
             scale = max(0.5, scale * 0.8)
         } label: {
-            Image(systemName: "minus.magnifyingglass")
-                .font(.title3)
-                .padding(8)
-                .background(Color.primary.opacity(0.1))
-                .clipShape(Circle())
+            VStack(spacing: 2) {
+                Image(systemName: "minus.magnifyingglass")
+                    .font(.title3)
+                    .padding(8)
+                    .background(Color.primary.opacity(0.1))
+                    .clipShape(Circle())
+
+                Text("ZOOM -")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
@@ -149,22 +167,34 @@ struct AnnotationToolbar: View {
         Button {
             scale = min(5.0, scale * 1.25)
         } label: {
-            Image(systemName: "plus.magnifyingglass")
-                .font(.title3)
-                .padding(8)
-                .background(Color.primary.opacity(0.1))
-                .clipShape(Circle())
+            VStack(spacing: 2) {
+                Image(systemName: "plus.magnifyingglass")
+                    .font(.title3)
+                    .padding(8)
+                    .background(Color.primary.opacity(0.1))
+                    .clipShape(Circle())
+
+                Text("ZOOM +")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
     @ViewBuilder
     private func clearButton(_ action: @escaping () -> Void, label: String = "page") -> some View {
         Button(action: action) {
-            Image(systemName: "trash")
-                .font(.title3)
-                .padding(8)
-                .background(Color.red.opacity(0.12))
-                .clipShape(Circle())
+            VStack(spacing: 2) {
+                Image(systemName: "trash")
+                    .font(.title3)
+                    .padding(8)
+                    .background(Color.red.opacity(0.12))
+                    .clipShape(Circle())
+
+                Text("Clear \(label.uppercased())")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 }

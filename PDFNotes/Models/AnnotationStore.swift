@@ -37,6 +37,16 @@ enum AnnotationColor: CaseIterable {
         case .yellow: return "circle.fill"
         }
     }
+
+    var name: String {
+        switch self {
+        case .black:  return "Black"
+        case .blue:   return "Blue"
+        case .red:    return "Red"
+        case .green:  return "Green"
+        case .yellow: return "Yellow"
+        }
+    }
     
     #if os(iOS)
     var pkInkColor: UIColor {
