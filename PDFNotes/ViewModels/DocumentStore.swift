@@ -10,23 +10,20 @@ final class DocumentStore: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var outlineItems: [OutlineItem] = []
-    
+
     #if os(iOS)
-    @Published var annotationsEnabled = false
-    @Published var currentTool: AnnotationTool = .pen
-    @Published var currentColor: AnnotationColor = .blue
     @Published var currentPageIndex = 1
     let annotationStore = AnnotationStore()
     #endif
 
 private var _pdfDocument: PDFDocument?
-    
+
     var pdfDocument: PDFDocument? { _pdfDocument }
-    
+
     func loadDocument(at url: URL) {
         isLoading = true
         errorMessage = nil
-        
+
         outlineItems.removeAll()
 
         guard let document = PDFDocument(url: url) else {
@@ -37,7 +34,7 @@ private var _pdfDocument: PDFDocument?
 
         self._pdfDocument = document
         selectedDocument = Document(url: url)
-        
+
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
@@ -53,9 +50,9 @@ private var _pdfDocument: PDFDocument?
             await annotationStore.loadDrawings(pageCount: document.pageCount)
         }
         #endif
-        
+
         outlineItems = OutlineItem.extractAll(from: document)
-        
+
         isLoading = false
     }
 
@@ -68,20 +65,17 @@ private var _pdfDocument: PDFDocument?
         selectedDocument = nil
         errorMessage = nil
         outlineItems.removeAll()
-        
+
         #if os(iOS)
         currentPageIndex = 1
         annotationStore.reset()
-        annotationsEnabled = false
-        currentTool = .pen
-        currentColor = .blue
         #endif
     }
 
     func navigateToPage(_ index: Int) {
         guard let doc = pdfDocument,
               index >= 1, index <= doc.pageCount else { return }
-        
+
         #if os(iOS)
         flushAnnotations()
         currentPageIndex = index
@@ -91,22 +85,6 @@ private var _pdfDocument: PDFDocument?
     }
 
     #if os(iOS)
-    func toggleAnnotations() {
-        annotationsEnabled.toggle()
-        if !annotationsEnabled {
-            flushAnnotations()
-        }
-    }
-
-    func setTool(_ tool: AnnotationTool) {
-        currentTool = tool
-    }
-
-    func cycleColor() {
-        annotationStore.nextColor()
-        currentColor = annotationStore.color
-    }
-
     func goToPage(_ index: Int) {
         guard let doc = pdfDocument,
               index >= 1, index <= doc.pageCount else { return }

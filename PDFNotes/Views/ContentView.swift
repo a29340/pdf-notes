@@ -31,26 +31,16 @@ struct ContentView: View {
         NavigationStack {
             ZStack(alignment: .topTrailing) {
                 PDFViewRepresentable(
-                    annotationsEnabled: $store.annotationsEnabled,
-                    currentTool: $store.currentTool,
-                    currentColor: $store.currentColor,
                     currentPageIndex: $store.currentPageIndex,
                     pdfDocument: store.pdfDocument,
                     annotationStore: store.annotationStore
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                closeTopButton
             }
             .safeAreaInset(edge: .bottom) {
                 AnnotationToolbar(
-                    annotationsEnabled: store.annotationsEnabled,
-                    currentTool: $store.currentTool,
-                    currentColor: $store.currentColor,
                     currentPageIndex: $store.currentPageIndex,
                     pageCount: store.pdfDocument?.pageCount ?? 0,
-                    onToolChange: { tool in store.setTool(tool) },
-                    onColorChange: { store.cycleColor() },
                     onClearPage: {
                         store.annotationStore.clearCurrentCanvasPage()
                         store.clearAnnotations(page: store.currentPageIndex)
@@ -61,7 +51,7 @@ struct ContentView: View {
                     },
                     onPagePrev: { store.goToPage(store.currentPageIndex - 1) },
                     onPageNext: { store.goToPage(store.currentPageIndex + 1) },
-                    onToggleAnnotations: { store.toggleAnnotations() }
+                    onCloseDocument: { store.reset() }
                 )
             }
             .overlay(alignment: .topLeading) {
@@ -85,20 +75,6 @@ struct ContentView: View {
         } label: {
             Image(systemName: "list.bullet")
                 .font(.title3)
-                .padding(8)
-                .background(Color.primary.opacity(0.15))
-                .clipShape(Circle())
-        }
-    }
-
-    @ViewBuilder
-    private var closeTopButton: some View {
-        Button {
-            store.reset()
-        } label: {
-            Image(systemName: "xmark.circle.fill")
-                .font(.title2)
-                .foregroundColor(.red)
                 .padding(8)
                 .background(Color.primary.opacity(0.15))
                 .clipShape(Circle())

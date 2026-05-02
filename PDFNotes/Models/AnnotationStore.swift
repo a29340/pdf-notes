@@ -1,74 +1,14 @@
 import Foundation
-import SwiftUI
 
 #if os(iOS)
 import PencilKit
 #endif
-
-enum AnnotationTool {
-    case pen
-    case highlighter
-    case eraser
-}
-
-enum AnnotationColor: CaseIterable {
-    case black
-    case blue
-    case red
-    case green
-    case yellow
-    
-    var swiftUIColor: Color {
-        switch self {
-        case .black:  return .black
-        case .blue:   return .blue
-        case .red:    return .red
-        case .green:  return .green
-        case .yellow: return .yellow
-        }
-    }
-    
-    var symbolName: String {
-        switch self {
-        case .black:  return "circle.fill"
-        case .blue:   return "circle.fill"
-        case .red:    return "circle.fill"
-        case .green:  return "circle.fill"
-        case .yellow: return "circle.fill"
-        }
-    }
-
-    var name: String {
-        switch self {
-        case .black:  return "Black"
-        case .blue:   return "Blue"
-        case .red:    return "Red"
-        case .green:  return "Green"
-        case .yellow: return "Yellow"
-        }
-    }
-    
-    #if os(iOS)
-    var pkInkColor: UIColor {
-        switch self {
-        case .black:  return .black
-        case .blue:   return .systemBlue
-        case .red:    return .systemRed
-        case .green:  return .systemGreen
-        case .yellow: return .systemYellow
-        }
-    }
-    #endif
-}
 
 #if os(iOS)
 final class AnnotationStore {
     var baseURL: URL?
     var drawings: [Int: PKDrawing] = [:]
     private var dirtyPages: Set<Int> = []
-    var tool: AnnotationTool = .pen
-    var color: AnnotationColor = .blue
-    var annotationsEnabled = false
     weak var canvasView: PKCanvasView?
 
     func drawing(for page: Int) -> PKDrawing {
@@ -134,17 +74,7 @@ final class AnnotationStore {
         }
     }
 
-    func nextColor() {
-        let allCases = AnnotationColor.allCases
-        guard let currentIdx = allCases.firstIndex(of: color) else { return }
-        let nextIdx = (currentIdx + 1) % allCases.count
-        color = allCases[nextIdx]
-    }
-
     func reset() {
-        tool = .pen
-        color = .blue
-        annotationsEnabled = false
         drawings.removeAll()
         dirtyPages.removeAll()
         baseURL = nil
@@ -161,13 +91,9 @@ final class AnnotationStore {
 
     private static let fileExtension = "drawing"
 
-    private func fileURL(for page: Int) -> URL {
-        return baseURL!.appendingPathComponent("page_\(page).\(Self.fileExtension)")
-    }
-
     private func saveDrawing(_ drawing: PKDrawing, to baseURL: URL, page: Int) {
         do {
-            let data = try drawing.dataRepresentation()
+            let data = drawing.dataRepresentation()
             let fileURL = baseURL.appendingPathComponent("page_\(page).\(Self.fileExtension)")
             try data.write(to: fileURL)
         } catch {
@@ -193,14 +119,8 @@ final class AnnotationStore {
 #else
 final class AnnotationStore {
     var baseURL: URL?
-    var tool: AnnotationTool = .pen
-    var color: AnnotationColor = .blue
-    var annotationsEnabled = false
 
     func reset() {
-        tool = .pen
-        color = .blue
-        annotationsEnabled = false
         baseURL = nil
     }
 }

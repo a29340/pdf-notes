@@ -7,19 +7,11 @@ import PencilKit
 
 #if os(iOS)
 
-class MultiTouchCanvas: PKCanvasView {
-    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-        if let touches = event?.allTouches, touches.count > 1 {
-            return nil
-        }
-        return super.hitTest(point, with: event)
-    }
+class AnnotatingPDFView: PDFView {
+    override var canBecomeFirstResponder: Bool { false }
 }
 
 struct PDFViewRepresentable: UIViewRepresentable {
-    @Binding var annotationsEnabled: Bool
-    @Binding var currentTool: AnnotationTool
-    @Binding var currentColor: AnnotationColor
     @Binding var currentPageIndex: Int
     var pdfDocument: PDFDocument?
     var annotationStore: AnnotationStore
@@ -27,7 +19,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let container = UIView()
 
-        let pdfView = PDFView()
+        let pdfView = AnnotatingPDFView()
         pdfView.autoScales = false
         pdfView.displayMode = .singlePage
         pdfView.translatesAutoresizingMaskIntoConstraints = false
@@ -37,10 +29,11 @@ struct PDFViewRepresentable: UIViewRepresentable {
             pdfView.document = document
         }
 
-        let canvas = MultiTouchCanvas()
-        canvas.translatesAutoresizingMaskIntoConstraints = true
+        let canvas = PKCanvasView()
+        canvas.translatesAutoresizingMaskIntoConstraints = false
         canvas.isOpaque = false
         canvas.backgroundColor = .clear
+        canvas.isUserInteractionEnabled = true
         canvas.delegate = context.coordinator
         container.addSubview(canvas)
 
@@ -49,23 +42,32 @@ struct PDFViewRepresentable: UIViewRepresentable {
             pdfView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             pdfView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             pdfView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            canvas.topAnchor.constraint(equalTo: container.topAnchor),
+            canvas.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            canvas.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            canvas.bottomAnchor.constraint(equalTo: container.bottomAnchor),
         ])
 
         let coordinator = context.coordinator
         coordinator.pdfView = pdfView
         coordinator.canvas = canvas
         coordinator.container = container
-        coordinator.annotationsEnabled = annotationsEnabled
-        coordinator.currentTool = currentTool
-        coordinator.currentColor = currentColor
+
+        let toolPicker = buildToolPicker()
+        toolPicker.addObserver(coordinator)
+        coordinator.toolPicker = toolPicker
         annotationStore.canvasView = canvas
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak coordinator] in
-            guard let c = coordinator else { return }
-            c.syncCanvasToPage(pageIndex: 1)
-        }
-
         coordinator.startPolling()
+
+        DispatchQueue.main.async { [weak coordinator] in
+            guard let coordinator else { return }
+            _ = canvas.becomeFirstResponder()
+            if let selectedTool = toolPicker.selectedToolItem.tool {
+                canvas.tool = selectedTool
+            }
+            toolPicker.setVisible(true, forFirstResponder: canvas)
+        }
 
         return container
     }
@@ -76,15 +78,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
         if let document = pdfDocument, pdfView.document == nil {
             pdfView.document = document
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak coordinator] in
-                guard let c = coordinator else { return }
-                c.syncCanvasToPage(pageIndex: c.currentPageIndex)
-            }
         }
-
-        coordinator.annotationsEnabled = annotationsEnabled
-        coordinator.currentTool = currentTool
-        coordinator.currentColor = currentColor
 
         if coordinator.currentPageIndex != currentPageIndex {
             coordinator.saveCurrentDrawing()
@@ -92,22 +86,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
                 pdfView.go(to: page)
             }
             coordinator.syncCanvasToPage(pageIndex: currentPageIndex)
-        }
-
-        if let canvas = coordinator.canvas {
-            if annotationsEnabled {
-                canvas.isUserInteractionEnabled = true
-                switch currentTool {
-                case .pen:
-                    canvas.tool = PKInkingTool(.pen, color: currentColor.pkInkColor, width: 5)
-                case .highlighter:
-                    canvas.tool = PKInkingTool(.marker, color: currentColor.pkInkColor, width: 30)
-                case .eraser:
-                    canvas.tool = PKEraserTool(.vector)
-                }
-            } else {
-                canvas.isUserInteractionEnabled = false
-            }
+            coordinator.activateCanvas()
         }
     }
 
@@ -115,15 +94,13 @@ struct PDFViewRepresentable: UIViewRepresentable {
         Coordinator(store: annotationStore)
     }
 
-    final class Coordinator: NSObject, PKCanvasViewDelegate {
-        var pdfView: PDFView?
-        var canvas: MultiTouchCanvas?
+    final class Coordinator: NSObject, PKCanvasViewDelegate, PKToolPickerObserver {
+        var pdfView: AnnotatingPDFView?
+        var canvas: PKCanvasView?
         var container: UIView?
         var currentPageIndex: Int = 1
-        var annotationsEnabled = false
-        var currentTool: AnnotationTool = .pen
-        var currentColor: AnnotationColor = .blue
         private let store: AnnotationStore
+        var toolPicker: PKToolPicker?
 
         private var pollTimer: Timer?
         private var lastVisibleRect: CGRect = .zero
@@ -149,11 +126,19 @@ struct PDFViewRepresentable: UIViewRepresentable {
             pollTimer = nil
         }
 
+        func activateCanvas() {
+            guard let canvas = canvas else { return }
+            if !canvas.isFirstResponder {
+                _ = canvas.becomeFirstResponder()
+            }
+            if let selectedTool = toolPicker?.selectedToolItem.tool {
+                canvas.tool = selectedTool
+            }
+        }
+
         func pollSync() {
             guard let pdfView = pdfView,
                   let canvas = canvas,
-                  let container = container,
-                  let document = pdfView.document,
                   let page = currentPage ?? pdfView.document?.page(at: currentPageIndex - 1) else { return }
 
             let pageBounds = page.bounds(for: .mediaBox)
@@ -167,10 +152,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
             let positionChanged = abs(visibleRect.origin.x - lastVisibleRect.origin.x) > 0.5
                 || abs(visibleRect.origin.y - lastVisibleRect.origin.y) > 0.5
 
-            guard scaleFactorChanged || positionChanged else {
-                lastVisibleRect = visibleRect
-                return
-            }
+            guard scaleFactorChanged || positionChanged else { return }
 
             let oldFrame = canvas.frame
 
@@ -186,7 +168,6 @@ struct PDFViewRepresentable: UIViewRepresentable {
         func syncCanvasToPage(pageIndex: Int) {
             guard let pdfView = pdfView,
                   let canvas = canvas,
-                  let container = container,
                   let page = pdfView.document?.page(at: pageIndex - 1) else { return }
 
             currentPageIndex = pageIndex
@@ -219,7 +200,7 @@ struct PDFViewRepresentable: UIViewRepresentable {
 
             guard scaleX != 1.0 || scaleY != 1.0 else { return }
 
-            let drawing = canvas.drawing ?? PKDrawing()
+            let drawing = canvas.drawing
             var newStrokes: [PKStroke] = []
 
             for stroke in drawing.strokes {
@@ -244,7 +225,35 @@ struct PDFViewRepresentable: UIViewRepresentable {
                 await store.saveDirtyDrawings()
             }
         }
+
+        func toolPickerSelectedToolItemDidChange(_ toolPicker: PKToolPicker) {
+            if let selectedTool = toolPicker.selectedToolItem.tool {
+                store.canvasView?.tool = selectedTool
+            }
+        }
     }
+}
+
+private func buildToolPicker() -> PKToolPicker {
+    let pen = PKToolPickerInkingItem(type: .pen, color: UIColor.black, width: 4)
+    let monoline = PKToolPickerInkingItem(type: .monoline, color: UIColor.systemBlue, width: 2, identifier: "com.pdfnotes.monoline")
+    let pencil = PKToolPickerInkingItem(type: .pencil, color: UIColor.darkGray, width: 3)
+    let marker = PKToolPickerInkingItem(type: .marker, color: UIColor.systemYellow, width: 20)
+    let fountainPen = PKToolPickerInkingItem(type: .fountainPen, color: UIColor.systemRed, width: 5, identifier: "com.pdfnotes.fountainpen")
+    let watercolor = PKToolPickerInkingItem(type: .watercolor, color: UIColor.systemPurple, width: 10)
+    let crayon = PKToolPickerInkingItem(type: .crayon, color: UIColor.systemGreen, width: 8)
+    let vectorEraser = PKToolPickerEraserItem(type: .vector)
+    let bitmapEraser = PKToolPickerEraserItem(type: .bitmap)
+
+    let items: [PKToolPickerItem] = [
+        pen, monoline, pencil,
+        marker, fountainPen, watercolor, crayon,
+        vectorEraser, bitmapEraser,
+    ]
+
+    let picker = PKToolPicker(toolItems: items)
+    picker.selectedToolItem = pen
+    return picker
 }
 #endif
 
